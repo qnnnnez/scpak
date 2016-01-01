@@ -1,9 +1,16 @@
-#include <iostream>
-using namespace std;
+#include "pakfile.h"
+#include <sstream>
 
-int main(int argc, char *argv[])
+using namespace std;
+using namespace scpak;
+
+int main()
 {
-    cout << "Hello world!" << endl;
-    return 0;
+    stringstream ss;
+    BinaryWriter writer(&ss);
+    writer.writeString("test test test test test");
+    BinaryReader reader(&ss);
+    string str = reader.readString();
+    cout << str << endl;
 }
 
