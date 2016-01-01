@@ -141,8 +141,8 @@ namespace scpak
         for (PakItem &item : m_contents)
         {
             stream.seekg(header.contentOffset + item.offset, std::ios::beg);
-            byte *data = new byte[item.length];
-            stream.read(reinterpret_cast<char*>(data), item.length);
+            item.data = new byte[item.length];
+            stream.read(reinterpret_cast<char*>(item.data), item.length);
             item.offset = -1; // we will not be able to access the stream
         }
     }

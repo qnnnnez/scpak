@@ -37,14 +37,14 @@ namespace scpak
 
     typedef struct
     {
-        byte magic[4] = {0x50, 0x41, 0x43, 0x00};
+        byte magic[4] = {byte('P'), byte('A'), byte('K'), byte('\0')};
         int fileLength;
         int contentOffset;
         int contentCount;
 
         bool checkMagic() const
         {
-            return magic[0] == 0x50 && magic[1] == 0x41 && magic[2] == 0x43 && magic[3] == 0x00;
+            return magic[0] == byte('P') && magic[1] == byte('A') && magic[2] == byte('K') && magic[3] == byte('\0');
         }
     } PakHeader;
 
