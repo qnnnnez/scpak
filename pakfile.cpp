@@ -113,6 +113,16 @@ namespace scpak
     {
     }
 
+    PakFile::~PakFile()
+    {
+        for (const PakItem &item : m_contents)
+        {
+            delete[] item.name;
+            delete[] item.type;
+            delete[] item.data;
+        }
+    }
+
     void PakFile::load(std::istream &stream)
     {
         // read header

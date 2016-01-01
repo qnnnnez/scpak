@@ -34,7 +34,7 @@ namespace scpak
         std::ostream *m_stream;
     };
 
-    typedef struct
+    typedef struct // PakHeader
     {
         byte magic[4] = {byte('P'), byte('A'), byte('K'), byte('\0')};
         int fileLength;
@@ -47,7 +47,7 @@ namespace scpak
         }
     } PakHeader;
 
-    typedef struct
+    typedef struct // PakItem
     {
         char *name = nullptr;
         char *type = nullptr;
@@ -60,6 +60,7 @@ namespace scpak
     {
     public:
         PakFile();
+        ~PakFile();
         PakFile(const PakFile &) = delete;
         PakFile(PakFile &&);
         void load(std::istream &stream);
