@@ -203,5 +203,45 @@ namespace scpak
     {
         return m_contents;
     }
+
+    void PakFile::addItem(const PakItem &item)
+    {
+        PakItem newItem;
+        newItem.name = new char[strlen(item.name)+1];
+        strcpy(newItem.name, item.name);
+        newItem.type = new char[strlen(item.type)+1];
+        strcpy(newItem.type, item.type);
+        newItem.length = item.length;
+        newItem.data = new byte[newItem.length];
+        memcpy(newItem.data, item.data, newItem.length);
+        m_contents.push_back(newItem);
+    }
+
+    void PakFile::addItem(PakItem &&item)
+    {
+        m_contents.push_back(item);
+        item.name = nullptr;
+        item.type = nullptr;
+        item.data = nullptr;
+    }
+
+    PakItem& PakFile::getItem(std::size_t where)
+    {
+        return m_contents.at(where);
+    }
+
+    void PakFile::removeItem(std::size_t where)
+    {
+        m_contents.erase(m_contents.begin()+where);
+    }
+
+    void PakFile::deleteItem(std::size_t where)
+    {
+        PakItem &item = m_contents.at(where);
+        delete[] item.name;
+        delete[] item.type;
+        delete[] item.data;
+        m_contents.erase(m_contents.begin()+where);
+    }
 }
 

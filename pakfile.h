@@ -51,8 +51,8 @@ namespace scpak
     {
         char *name = nullptr;
         char *type = nullptr;
-        int offset;
-        int length;
+        int offset = -1;
+        int length = -1;
         byte *data = nullptr;
     } PakItem;
 
@@ -65,7 +65,12 @@ namespace scpak
         PakFile(PakFile &&);
         void load(std::istream &stream);
         void save(std::ostream &stream);
-        const std::vector<PakItem> & contents() const;
+        const std::vector<PakItem>& contents() const;
+        void addItem(const PakItem &item);
+        void addItem(PakItem &&item);
+        PakItem& getItem(std::size_t where);
+        void deleteItem(std::size_t where);
+        void removeItem(std::size_t where);
     private:
         std::vector<PakItem> m_contents;
     };
