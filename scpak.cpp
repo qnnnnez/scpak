@@ -1,4 +1,5 @@
 #include "pakfile.h"
+#include "process.h"
 #include <sstream>
 #include <fstream>
 
@@ -7,19 +8,10 @@ using namespace scpak;
 
 int main(int argc, char *argv[])
 {
-    ifstream fin("Content.pak", ios::binary);
-    PakFile pak;
-    pak.load(fin);
-    fin.close();
-    auto items = pak.contents();
-    for(auto item : items)
-    {
-        cout << item.name << endl;
-    }
-    ofstream fout("Content2.pak", ios::binary);
-    stringstream ss(reinterpret_cast<char*>(items[0].data));
-    BinaryReader reader(&ss);
-    cout << reader.readString() << endl;
+    PakFile pak = pack("./Content");
+    ofstream fout("Content2.pak");
+    pak.save(fout);
+    fout.close();
     return 0;
 }
 
