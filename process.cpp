@@ -30,27 +30,49 @@ namespace scpak
         unsigned long filesize = -1;
         struct stat statbuf;
         if (stat(path, &statbuf) < 0)
-            throw std::runtime_error("failed to get stat: " + std::string(path));
+            throw std::runtime_error("failed to get call stat: " + std::string(path));
         filesize = statbuf.st_size;
         return static_cast<int>(filesize);
     }
 }
-#elif defined(MSV_VER)
-# include <io.h>
+#elif defined(_WIN32)
+# include <windows.h>
 namespace scpak
 {
     const char pathsep = '\\';
 
     void createDirectory(const char *path)
     {
-        int result = _mkdir(path);
-        if (result == -1)
-            throw std::runtime_error("failed to create directory: " + std::string(path));
+		int result = CreateDirectoryA(path, NULL);
+        if (result == 0)
+            throw std::runtime_error("failed to get file size: " + std::string(path));
     }
+
     bool directoryExists(const char *path)
     {
-        return _access(path, 0) == 0;
+		WIN32_FIND_DATA FindFileData;
+		HANDLE hFind;
+		hFind = FindFirstFileA(path, &FindFileData);
+		if (hFind == INVALID_HANDLE_VALUE)
+			return false;
+		else
+		{
+			FindClose(hFind);
+			return true;
+		}
     }
+
+	int getFileSize(const char *path)
+	{
+		WIN32_FIND_DATA fileInfo;
+		HANDLE hFind;
+		hFind = FindFirstFileA(path, &fileInfo);
+		if (hFind == INVALID_HANDLE_VALUE)
+			throw std::runtime_error("failed get file size: " + std::string(path));
+		int size = fileInfo.nFileSizeLow;
+		FindClose(hFind);
+		return size;
+	}
 }
 #endif
 
