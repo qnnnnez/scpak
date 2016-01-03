@@ -6,6 +6,11 @@
 #include <sstream>
 #include <cstring>
 
+#if defined(_MSC_VER)
+# pragma warning(disable: 4996)
+# pragma warning(disable: 4244)
+#endif
+
 namespace scpak
 {
     void unpack(const PakFile &pak, const std::string &dirPath)
