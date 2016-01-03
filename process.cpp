@@ -1,80 +1,10 @@
 #include "process.h"
+#include "native.h"
 #include <stdexcept>
 #include <set>
 #include <fstream>
 #include <sstream>
 #include <cstring>
-
-#if defined(__linux__)
-# include <unistd.h>
-# include <sys/types.h>
-# include <sys/stat.h>
-namespace scpak
-{
-    const char pathsep = '/';
-
-    void createDirectory(const char *path)
-    {
-        int result = mkdir(path, 0777);
-        if (result == -1)
-            throw std::runtime_error("failed to create directory: " + std::string(path));
-    }
-
-    bool directoryExists(const char *path)
-    {
-        return access(path, F_OK) == 0;
-    }
-
-    int getFileSize(const char *path)
-    {
-        unsigned long filesize = -1;
-        struct stat statbuf;
-        if (stat(path, &statbuf) < 0)
-            throw std::runtime_error("failed to get call stat: " + std::string(path));
-        filesize = statbuf.st_size;
-        return static_cast<int>(filesize);
-    }
-}
-#elif defined(_WIN32)
-# include <windows.h>
-namespace scpak
-{
-    const char pathsep = '\\';
-
-    void createDirectory(const char *path)
-    {
-		int result = CreateDirectoryA(path, NULL);
-        if (result == 0)
-            throw std::runtime_error("failed to get file size: " + std::string(path));
-    }
-
-    bool directoryExists(const char *path)
-    {
-		WIN32_FIND_DATA FindFileData;
-		HANDLE hFind;
-		hFind = FindFirstFileA(path, &FindFileData);
-		if (hFind == INVALID_HANDLE_VALUE)
-			return false;
-		else
-		{
-			FindClose(hFind);
-			return true;
-		}
-    }
-
-	int getFileSize(const char *path)
-	{
-		WIN32_FIND_DATA fileInfo;
-		HANDLE hFind;
-		hFind = FindFirstFileA(path, &fileInfo);
-		if (hFind == INVALID_HANDLE_VALUE)
-			throw std::runtime_error("failed to get file size: " + std::string(path));
-		int size = fileInfo.nFileSizeLow;
-		FindClose(hFind);
-		return size;
-	}
-}
-#endif
 
 namespace scpak
 {
@@ -101,7 +31,7 @@ namespace scpak
         }
         // create directories if necessary
         for (const std::string &dir : directoriesToCreate)
-            if (!directoryExists(dir.c_str()))
+            if (!pathExists(dir.c_str()))
                 createDirectory(dir.c_str());
         // unpack contents
         for (const PakItem &item : pak.contents())
