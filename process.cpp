@@ -6,6 +6,9 @@
 #include <sstream>
 #include <cstring>
 
+#include "stb_image.h"
+#include "stb_image_write.h"
+
 #if defined(_MSC_VER)
 # pragma warning(disable: 4996)
 # pragma warning(disable: 4244)
@@ -59,6 +62,16 @@ namespace scpak
                 fout.write(value.data(), value.length());
                 fout.close();
             }
+			else if (std::strcmp(item.type, "Engine.Graphics.Texture2D") == 0)
+			{
+				std::string fileName = dirPathSafe + item.name + ".tga";
+				const byte *data = item.data;
+				const int &width = *reinterpret_cast<const int*>(data);
+				const int &height = *(reinterpret_cast<const int*>(data) + 1);
+				const int &mipmapLevel = *(reinterpret_cast<const int*>(data) + 2);
+				const void *imageData = reinterpret_cast<const void*>(data + sizeof(int) * 3);
+				stbi_write_tga(fileName.c_str(), width, height, 4, imageData);
+			}
             else
             {
                 // just write out raw data
@@ -126,6 +139,32 @@ namespace scpak
                 file.read(reinterpret_cast<char*>(item.data+ss.tellp()), fileSize);
                 file.close();
             }
+			else if (type == "Engine.Graphics.Texture2D")
+			{
+				std::string filePathRaw = dirPathSafe + name;
+				std::string fileName = filePathRaw;
+				if (pathExists((filePathRaw + ".tga").c_str()))
+					fileName += ".tga";
+				else if (pathExists((filePathRaw + ".png").c_str()))
+					fileName += ".png";
+				else if (pathExists((filePathRaw + ".bmp").c_str()))
+					fileName += ".bmp";
+				else
+					throw std::runtime_error("cannot find image file: " + name);
+				int width, height, comp;
+				unsigned char *data = stbi_load(fileName.c_str(), &width, &height, &comp, 0);
+				if (data == nullptr)
+					throw std::runtime_error("cannot load image file: " + name);
+				if (comp != 4)
+					throw std::runtime_error("image must have 4 components in every pixel: " + name);
+				item.length = sizeof(int) * 3 + width * height * comp;
+				item.data = new byte[item.length];
+				*reinterpret_cast<int*>(item.data) = width;
+				*(reinterpret_cast<int*>(item.data) + 1) = height;
+				*(reinterpret_cast<int*>(item.data) + 2) = 0;
+				std::memcpy(item.data + sizeof(int) * 3, data, width*height*comp);
+				stbi_image_free(data);
+			}
             else
             {
                 std::string filePath = dirPathSafe + name;
