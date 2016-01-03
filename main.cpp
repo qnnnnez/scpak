@@ -8,10 +8,11 @@ using namespace scpak;
 
 int main(int argc, char *argv[])
 {
-    PakFile pak = pack("./Content");
-    ofstream fout("Content2.pak");
-    pak.save(fout);
-    fout.close();
+	ifstream fin("Content.pak", ios::binary);
+	PakFile pak;
+	pak.load(fin);
+	fin.close();
+	unpack(pak, "./Content");
     return 0;
 }
 
