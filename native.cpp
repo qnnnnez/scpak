@@ -89,13 +89,17 @@ namespace scpak
 	bool isDirectory(const char *path)
 	{
 		DWORD attributes = GetFileAttributesA(path);
+		if (attributes == INVALID_FILE_ATTRIBUTES)
+			throw std::runtime_error("failed to get file attribute: " + std::string(path));
 		return (attributes & FILE_ATTRIBUTE_DIRECTORY) != 0;
 	}
 
 	bool isNormalFile(const char *path)
 	{
 		DWORD attributes = GetFileAttributesA(path);
-		return (attributes & FILE_ATTRIBUTE_NORMAL) != 0;
+		if (attributes == INVALID_FILE_ATTRIBUTES)
+			throw std::runtime_error("failed to get file attribute: " + std::string(path));
+		return (attributes & FILE_ATTRIBUTE_NORMAL) != 0 || (attributes & FILE_ATTRIBUTE_ARCHIVE) != 0;
 	}
 }
 #endif
