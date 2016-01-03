@@ -68,7 +68,7 @@ namespace scpak
 		HANDLE hFind;
 		hFind = FindFirstFileA(path, &fileInfo);
 		if (hFind == INVALID_HANDLE_VALUE)
-			throw std::runtime_error("failed get file size: " + std::string(path));
+			throw std::runtime_error("failed to get file size: " + std::string(path));
 		int size = fileInfo.nFileSizeLow;
 		FindClose(hFind);
 		return size;
@@ -88,15 +88,15 @@ namespace scpak
         directoriesToCreate.insert(dirPath);
         for (const PakItem &item : pak.contents())
         {
-            std::string filePath = dirPathSafe + item.name;
-            std::size_t pend = filePath.rfind(pathsep);
+            std::string filePath = item.name;
+            std::size_t pend = filePath.rfind('/');
             if (pend == std::string::npos)
                 continue;
             std::size_t p = 0;
             while (p != pend)
             {
-                p = filePath.find(pathsep, p+1);
-                directoriesToCreate.insert(filePath.substr(0, p));
+                p = filePath.find('/', p+1);
+                directoriesToCreate.insert(dirPathSafe + filePath.substr(0, p));
             }
         }
         // create directories if necessary
