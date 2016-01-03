@@ -11,7 +11,7 @@ void printUsage(int argc, char *argv[])
 {
 	string programPath = argv[0];
 	size_t i = programPath.rfind(pathsep);
-	string programName = programPath.substr(i);
+	string programName = programPath.substr(i+1);
 	cout << "Usage: " << programName << " <directory> | <pakfile>" << endl;
 }
 
