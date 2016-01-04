@@ -36,7 +36,7 @@ namespace scpak
 		struct stat statbuf;
 		if (stat(path, &statbuf) < 0)
 			throw std::runtime_error("failed to get call stat: " + std::string(path));
-		return S_ISDIR(buf.st_mode);
+		return S_ISDIR(statbuf.st_mode);
 	}
 
 	bool isNormalFile(const char *path)
@@ -44,7 +44,7 @@ namespace scpak
 		struct stat statbuf;
 		if (stat(path, &statbuf) < 0)
 			throw std::runtime_error("failed to get call stat: " + std::string(path));
-		return S_ISREG(buf.st_mode);
+		return S_ISREG(statbuf.st_mode);
 	}
 }
 #elif defined(_WIN32)
