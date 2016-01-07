@@ -185,7 +185,13 @@ namespace scpak
         // write content items
         for (PakItem &item : m_contents)
         {
-            item.offset = stream.tellp();
+            // there are a magic number before every content data in origin Content.pak
+            // it's DEADBEEF
+            stream.put(0xDE);
+            stream.put(0xAD);
+            stream.put(0xBE);
+            stream.put(0xEF);
+            item.offset = static_cast<int>(stream.tellp()) - header.contentOffset;
             stream.write(reinterpret_cast<char*>(item.data), item.length);
         }
 
