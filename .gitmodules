@@ -1,3 +1,6 @@
 [submodule "simpleini"]
 	path = simpleini
 	url = https://github.com/brofield/simpleini.git
+[submodule "OptionHandler"]
+	path = OptionHandler
+	url = https://github.com/ryngonzalez/OptionHandler.git
