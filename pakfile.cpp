@@ -73,7 +73,7 @@ namespace scpak
 
     byte MemoryBinaryReader::readByte()
     {
-        return m_buffer[++position];
+        return m_buffer[position++];
     }
 
     StreamBinaryWriter::StreamBinaryWriter(std::ostream *stream)
@@ -97,7 +97,7 @@ namespace scpak
 
     void MemoryBinaryWriter::writeByte(byte value)
     {
-        m_buffer[++position] = value;
+        m_buffer[position++] = value;
     }
 
 
@@ -114,7 +114,7 @@ namespace scpak
 
     void BinaryWriter::write7BitEncodedInt(int value)
     {
-        while ((value & 128) != 0)
+        while (value > 127)
         {
             byte n = static_cast<byte>(value & 127);
             n |= 128;
