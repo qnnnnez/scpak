@@ -50,24 +50,18 @@ namespace scpak
         {
             std::stringstream lineBuffer;
             lineBuffer << item.name << ':' << item.type;
-            goto unpack_raw;
-            if (std::strcmp(item.type, "System.String") == 0)
+            std::string itemType = item.type;
+            if (itemType == "System.String")
             {
-                std::ofstream fout(dirPathSafe + item.name + ".txt", std::ios::binary);
-                MemoryBinaryReader reader(item.data);
-                std::string value = reader.readString();
-                fout.write(value.data(), value.length());
-                fout.close();
+                std::string fileName = dirPathSafe + item.name + ".txt";
+                unpack_string(fileName, item);
             }
-            else if (std::strcmp(item.type, "System.Xml.Linq.XElement") == 0)
+            else if (itemType == "System.Xml.Linq.XElement")
             {
-                std::ofstream fout(dirPathSafe + item.name + ".xml", std::ios::binary);
-                MemoryBinaryReader reader(item.data);
-                std::string value = reader.readString();
-                fout.write(value.data(), value.length());
-                fout.close();
+                std::string fileName = dirPathSafe + item.name + ".xml";
+                unpack_string(fileName, item);
             }
-			else if (std::strcmp(item.type, "Engine.Graphics.Texture2D") == 0)
+			else if (itemType == "Engine.Graphics.Texture2D")
 			{
                 goto unpack_raw;
                 // not ready yet
@@ -129,30 +123,15 @@ namespace scpak
             item.type = new char[type.length()+1];
             strcpy(item.type, type.c_str());
 
-            goto pack_raw;
             if (type == "System.String")
             {
                 std::string filePath = dirPathSafe + name + ".txt";
-                int fileSize = getFileSize(filePath.c_str());
-                std::ifstream file(filePath, std::ios::binary);
-                item.data = new byte[fileSize+5];
-                MemoryBinaryWriter writer(item.data);
-                writer.write7BitEncodedInt(fileSize);
-                item.length = fileSize + writer.position;
-                file.read(reinterpret_cast<char*>(item.data+writer.position), fileSize);
-                file.close();
+                pack_string(filePath, item);
             }
             else if (type == "System.Xml.Linq.XElement")
             {
                 std::string filePath = dirPathSafe + name + ".xml";
-                int fileSize = getFileSize(filePath.c_str());
-                std::ifstream file(filePath, std::ios::binary);
-                item.data = new byte[fileSize+5];
-                MemoryBinaryWriter writer(item.data);
-                writer.write7BitEncodedInt(fileSize);
-                item.length = fileSize + writer.position;
-                file.read(reinterpret_cast<char*>(item.data+writer.position), fileSize);
-                file.close();
+                pack_string(filePath, item);
             }
 			else if (type == "Engine.Graphics.Texture2D")
 			{
@@ -235,6 +214,37 @@ namespace scpak
             --level;
         }
         return offset;
+    }
+
+    void unpack_string(const std::string &fileName, const PakItem &item)
+    {
+        std::ofstream fout;
+        fout.open(fileName, std::ios::binary);
+        MemoryBinaryReader reader(item.data);
+        std::string value = reader.readString();
+        fout.write(value.data(), value.length());
+        fout.close();
+    }
+
+    void pack_string(const std::string &fileName, PakItem &item)
+    {
+        if (item.data != nullptr)
+            delete[] item.data;
+        
+        std::ifstream fin;
+        fin.open(fileName, std::ios::binary);
+        fin.seekg(0, std::ios::beg);
+        int offsetBeg = fin.tellg();
+        fin.seekg(0, std::ios::end);
+        int offsetEnd = fin.tellg();
+        int fileSize = offsetEnd - offsetBeg;
+
+        item.data = new byte[fileSize+5];
+        MemoryBinaryWriter writer(item.data);
+        writer.write7BitEncodedInt(fileSize);
+        item.length = fileSize + writer.position;
+        fin.read(reinterpret_cast<char*>(item.data+writer.position), fileSize);
+        fin.close();
     }
 }
 
