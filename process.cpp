@@ -19,6 +19,8 @@
 
 namespace scpak
 {
+    const char *PakInfoFileName = "scpak.info";
+
     void unpack(const PakFile &pak, const std::string &dirPath)
     {
         std::string dirPathSafe = dirPath;
@@ -63,7 +65,6 @@ namespace scpak
             }
 			else if (itemType == "Engine.Graphics.Texture2D")
 			{
-                goto unpack_raw;
                 // not ready yet
 				std::string fileName = dirPathSafe + item.name + ".tga";
 				const byte *data = item.data;
@@ -85,8 +86,8 @@ namespace scpak
             }
             infoLines.push_back(lineBuffer.str());
         }
-        // write pakinfo.txt - we need to repack it later
-        std::ofstream fout(dirPathSafe + "pakinfo.txt");
+        // write info file - we need to repack it later
+        std::ofstream fout(dirPathSafe + PakInfoFileName);
         for (const std::string &line : infoLines)
             fout << line << std::endl;
         fout.close();
@@ -99,7 +100,7 @@ namespace scpak
         std::string dirPathSafe = dirPath;
         if (*dirPathSafe.rbegin() != pathsep)
             dirPathSafe += pathsep;
-        std::ifstream fPakInfo(dirPathSafe + "pakinfo.txt");
+        std::ifstream fPakInfo(dirPathSafe + PakInfoFileName);
         std::string line;
         int lineNumber = 1;
         while(std::getline(fPakInfo, line))
@@ -108,7 +109,7 @@ namespace scpak
             if (split1 == std::string::npos)
             {
                 std::stringstream ss;
-                ss << "cannot parse pakinfo.txt, line " << lineNumber;
+                ss << "cannot parse " << PakInfoFileName << ", line " << lineNumber;
                 throw std::runtime_error(ss.str());
             }
             std::string name = line.substr(0, split1);
@@ -135,7 +136,6 @@ namespace scpak
             }
 			else if (type == "Engine.Graphics.Texture2D")
 			{
-                goto pack_raw;
                 // not ready yet
 				std::string filePathRaw = dirPathSafe + name;
 				std::string fileName = filePathRaw;
@@ -162,7 +162,7 @@ namespace scpak
 				item.data = new byte[item.length];
 				*reinterpret_cast<int*>(item.data) = width;
 				*(reinterpret_cast<int*>(item.data) + 1) = height;
-				*(reinterpret_cast<int*>(item.data) + 2) = 0;
+				*(reinterpret_cast<int*>(item.data) + 2) = mipmapLevel;
 				std::memcpy(item.data + sizeof(int) * 3, data, width*height*comp);
 				stbi_image_free(data);
                 int offset = generateMipmap(width, height, mipmapLevel, item.data + sizeof(int) * 3);
@@ -188,7 +188,7 @@ namespace scpak
     int calcMipmapSize(int width, int height, int level)
     {
         int size = width * height;
-        while (width%2 == 0 && height%2 == 0 && level != 0)
+        while (width%2 == 0 && height%2 == 0 && level > 1)
         {
             width /= 2;
             height /= 2;
@@ -203,7 +203,7 @@ namespace scpak
         const int comp = 4;
         int offset = width * height * comp;
         int w=width, h=height;
-        while (w%2 == 0 && h%2 == 0 && level != 0)
+        while (w%2 == 0 && h%2 == 0 && level > 1)
         {
             w /= 2;
             h /= 2;
@@ -238,6 +238,7 @@ namespace scpak
         fin.seekg(0, std::ios::end);
         int offsetEnd = fin.tellg();
         int fileSize = offsetEnd - offsetBeg;
+        fin.seekg(0, std::ios::beg);
 
         item.data = new byte[fileSize+5];
         MemoryBinaryWriter writer(item.data);
