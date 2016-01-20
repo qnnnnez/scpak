@@ -70,6 +70,8 @@ namespace scpak
             }
 			else if (std::strcmp(item.type, "Engine.Graphics.Texture2D") == 0)
 			{
+                goto unpack_raw;
+                // not ready yet
 				std::string fileName = dirPathSafe + item.name + ".tga";
 				const byte *data = item.data;
 				const int &width = *reinterpret_cast<const int*>(data);
@@ -128,8 +130,6 @@ namespace scpak
             item.type = new char[type.length()+1];
             strcpy(item.type, type.c_str());
 
-            std::cout << item.type << std::endl;
-
             if (type == "System.String")
             {
                 std::string filePath = dirPathSafe + name + ".txt";
@@ -158,6 +158,8 @@ namespace scpak
             }
 			else if (type == "Engine.Graphics.Texture2D")
 			{
+                goto pack_raw;
+                // not ready yet
 				std::string filePathRaw = dirPathSafe + name;
 				std::string fileName = filePathRaw;
 				if (pathExists((filePathRaw + ".tga").c_str()))
