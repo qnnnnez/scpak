@@ -63,19 +63,19 @@ namespace scpak
                 std::string fileName = dirPathSafe + item.name + ".xml";
                 unpack_string(fileName, item);
             }
-			else if (itemType == "Engine.Graphics.Texture2D")
-			{
+            else if (itemType == "Engine.Graphics.Texture2D")
+            {
                 // not ready yet
-				std::string fileName = dirPathSafe + item.name + ".tga";
-				const byte *data = item.data;
-				const int &width = *reinterpret_cast<const int*>(data);
-				const int &height = *(reinterpret_cast<const int*>(data) + 1);
-				const int &mipmapLevel = *(reinterpret_cast<const int*>(data) + 2);
-				const void *imageData = reinterpret_cast<const void*>(data + sizeof(int) * 3);
-				stbi_write_tga(fileName.c_str(), width, height, 4, imageData);
+                std::string fileName = dirPathSafe + item.name + ".tga";
+                const byte *data = item.data;
+                const int &width = *reinterpret_cast<const int*>(data);
+                const int &height = *(reinterpret_cast<const int*>(data) + 1);
+                const int &mipmapLevel = *(reinterpret_cast<const int*>(data) + 2);
+                const void *imageData = reinterpret_cast<const void*>(data + sizeof(int) * 3);
+                stbi_write_tga(fileName.c_str(), width, height, 4, imageData);
                 
                 lineBuffer << ':' << mipmapLevel;
-			}
+            }
             else
             {
             unpack_raw:
@@ -134,39 +134,39 @@ namespace scpak
                 std::string filePath = dirPathSafe + name + ".xml";
                 pack_string(filePath, item);
             }
-			else if (type == "Engine.Graphics.Texture2D")
-			{
+            else if (type == "Engine.Graphics.Texture2D")
+            {
                 // not ready yet
-				std::string filePathRaw = dirPathSafe + name;
-				std::string fileName = filePathRaw;
-				if (pathExists((filePathRaw + ".tga").c_str()))
-					fileName += ".tga";
-				else if (pathExists((filePathRaw + ".png").c_str()))
-					fileName += ".png";
-				else if (pathExists((filePathRaw + ".bmp").c_str()))
-					fileName += ".bmp";
-				//else if (pathExists(filePathRaw.c_str()))
+                std::string filePathRaw = dirPathSafe + name;
+                std::string fileName = filePathRaw;
+                if (pathExists((filePathRaw + ".tga").c_str()))
+                    fileName += ".tga";
+                else if (pathExists((filePathRaw + ".png").c_str()))
+                    fileName += ".png";
+                else if (pathExists((filePathRaw + ".bmp").c_str()))
+                    fileName += ".bmp";
+                //else if (pathExists(filePathRaw.c_str()))
                 //    goto pack_raw; // -_-
                 else
-					throw std::runtime_error("cannot find image file: " + name);
-				int width, height, comp;
-				unsigned char *data = stbi_load(fileName.c_str(), &width, &height, &comp, 0);
-				if (data == nullptr)
-					throw std::runtime_error("cannot load image file: " + name);
-				if (comp != 4)
-					throw std::runtime_error("image must have 4 components in every pixel: " + name);
+                    throw std::runtime_error("cannot find image file: " + name);
+                int width, height, comp;
+                unsigned char *data = stbi_load(fileName.c_str(), &width, &height, &comp, 0);
+                if (data == nullptr)
+                    throw std::runtime_error("cannot load image file: " + name);
+                if (comp != 4)
+                    throw std::runtime_error("image must have 4 components in every pixel: " + name);
                 int mipmapLevel = 0;
                 if (!extraInfo.empty())
                     std::stringstream(extraInfo) >> mipmapLevel;
                 item.length = sizeof(int) * 3 + calcMipmapSize(width, height, mipmapLevel) * comp;
-				item.data = new byte[item.length];
-				*reinterpret_cast<int*>(item.data) = width;
-				*(reinterpret_cast<int*>(item.data) + 1) = height;
-				*(reinterpret_cast<int*>(item.data) + 2) = mipmapLevel;
-				std::memcpy(item.data + sizeof(int) * 3, data, width*height*comp);
-				stbi_image_free(data);
+                item.data = new byte[item.length];
+                *reinterpret_cast<int*>(item.data) = width;
+                *(reinterpret_cast<int*>(item.data) + 1) = height;
+                *(reinterpret_cast<int*>(item.data) + 2) = mipmapLevel;
+                std::memcpy(item.data + sizeof(int) * 3, data, width*height*comp);
+                stbi_image_free(data);
                 int offset = generateMipmap(width, height, mipmapLevel, item.data + sizeof(int) * 3);
-			}
+            }
             else
             {
             pack_raw:
