@@ -50,11 +50,11 @@ namespace scpak
         {
             std::stringstream lineBuffer;
             lineBuffer << item.name << ':' << item.type;
+            goto unpack_raw;
             if (std::strcmp(item.type, "System.String") == 0)
             {
                 std::ofstream fout(dirPathSafe + item.name + ".txt", std::ios::binary);
-                std::stringstream ss(reinterpret_cast<char*>(item.data));
-                BinaryReader reader(&ss);
+                MemoryBinaryReader reader(item.data);
                 std::string value = reader.readString();
                 fout.write(value.data(), value.length());
                 fout.close();
@@ -62,8 +62,7 @@ namespace scpak
             else if (std::strcmp(item.type, "System.Xml.Linq.XElement") == 0)
             {
                 std::ofstream fout(dirPathSafe + item.name + ".xml", std::ios::binary);
-                std::stringstream ss(reinterpret_cast<char*>(item.data));
-                BinaryReader reader(&ss);
+                MemoryBinaryReader reader(item.data);
                 std::string value = reader.readString();
                 fout.write(value.data(), value.length());
                 fout.close();
@@ -130,17 +129,17 @@ namespace scpak
             item.type = new char[type.length()+1];
             strcpy(item.type, type.c_str());
 
+            goto pack_raw;
             if (type == "System.String")
             {
                 std::string filePath = dirPathSafe + name + ".txt";
                 int fileSize = getFileSize(filePath.c_str());
                 std::ifstream file(filePath, std::ios::binary);
                 item.data = new byte[fileSize+5];
-                std::stringstream ss(reinterpret_cast<char*>(item.data));
-                BinaryWriter writer(&ss);
+                MemoryBinaryWriter writer(item.data);
                 writer.write7BitEncodedInt(fileSize);
-                item.length = fileSize + ss.tellp();
-                file.read(reinterpret_cast<char*>(item.data+ss.tellp()), fileSize);
+                item.length = fileSize + writer.position;
+                file.read(reinterpret_cast<char*>(item.data+writer.position), fileSize);
                 file.close();
             }
             else if (type == "System.Xml.Linq.XElement")
@@ -149,11 +148,10 @@ namespace scpak
                 int fileSize = getFileSize(filePath.c_str());
                 std::ifstream file(filePath, std::ios::binary);
                 item.data = new byte[fileSize+5];
-                std::stringstream ss(reinterpret_cast<char*>(item.data));
-                BinaryWriter writer(&ss);
+                MemoryBinaryWriter writer(item.data);
                 writer.write7BitEncodedInt(fileSize);
-                item.length = fileSize + ss.tellp();
-                file.read(reinterpret_cast<char*>(item.data+ss.tellp()), fileSize);
+                item.length = fileSize + writer.position;
+                file.read(reinterpret_cast<char*>(item.data+writer.position), fileSize);
                 file.close();
             }
 			else if (type == "Engine.Graphics.Texture2D")

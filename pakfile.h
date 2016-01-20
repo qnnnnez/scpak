@@ -11,8 +11,7 @@ namespace scpak
     class BinaryReader
     {
     public:
-        BinaryReader(std::istream *stream);
-        byte readByte();
+        virtual byte readByte() = 0;
         void readBytes(int size, byte buf[]);
         int readInt();
         int read7BitEncodedInt();
@@ -21,17 +20,58 @@ namespace scpak
         std::istream *m_stream;
     };
 
+    class StreamBinaryReader: public BinaryReader
+    {
+    public:
+        StreamBinaryReader(std::istream *stream);
+
+        byte readByte();
+    private:
+        std::istream *m_stream;
+    };
+
+    class MemoryBinaryReader: public BinaryReader
+    {
+    public:
+        MemoryBinaryReader(const byte *buffer);
+        unsigned position;
+
+        byte readByte();
+    private:
+        const byte *m_buffer;
+    };
+
     class BinaryWriter
     {
     public:
-        BinaryWriter(std::ostream *stream);
-        void writeByte(byte value);
+        virtual void writeByte(byte value) = 0;
         void writeBytes(int size, const byte value[]);
         void writeInt(int value);
         void write7BitEncodedInt(int value);
         void writeString(const std::string &value);
     private:
         std::ostream *m_stream;
+    };
+
+    class StreamBinaryWriter: public BinaryWriter
+    {
+    public:
+        StreamBinaryWriter(std::ostream *stream);
+
+        void writeByte(byte value);
+    private:
+        std::ostream *m_stream;
+    };
+
+    class MemoryBinaryWriter: public BinaryWriter
+    {
+    public:
+        MemoryBinaryWriter(byte *buffer);
+        unsigned position;
+
+        void writeByte(byte value);
+    private:
+        byte *m_buffer;
     };
 
     typedef struct // PakHeader

@@ -12,18 +12,6 @@
 
 namespace scpak
 {
-    BinaryReader::BinaryReader(std::istream *stream)
-    {
-        m_stream = stream;
-    }
-
-    byte BinaryReader::readByte()
-    {
-        char ch;
-        m_stream->get(ch);
-        return static_cast<byte>(ch);
-    }
-
     void BinaryReader::readBytes(int size, byte buf[])
     {
         for (int i=0; i<size; ++i)
@@ -55,38 +43,74 @@ namespace scpak
     std::string BinaryReader::readString()
     {
         int length = read7BitEncodedInt();
-        char *buf = new char[length];
-        m_stream->read(buf, length);
-        std::string result(buf, buf + length);
-        delete[] buf;
-        return result;
+        std::string buffer;
+        buffer.resize(length);
+        for (int i=0; i<length; ++i)
+            buffer[i] = static_cast<char>(readByte());
+        return buffer;
     }
 
-    BinaryWriter::BinaryWriter(std::ostream *stream)
+
+    StreamBinaryReader::StreamBinaryReader(std::istream *stream)
     {
         m_stream = stream;
     }
 
-    void BinaryWriter::writeByte(byte value)
+    byte StreamBinaryReader::readByte()
     {
-        char data = static_cast<char>(value);
-        m_stream->put(data);
+        if (!*m_stream)
+            throw std::runtime_error("bad stream");
+        char ch;
+        m_stream->get(ch);
+        return static_cast<byte>(ch);
     }
+
+    MemoryBinaryReader::MemoryBinaryReader(const byte *buffer)
+    {
+        position = 0;
+        m_buffer = buffer;
+    }
+
+    byte MemoryBinaryReader::readByte()
+    {
+        return m_buffer[++position];
+    }
+
+    StreamBinaryWriter::StreamBinaryWriter(std::ostream *stream)
+    {
+        m_stream = stream;
+    }
+
+    void StreamBinaryWriter::writeByte(byte value)
+    {
+        if (!m_stream)
+            throw std::runtime_error("bad stream");
+        char ch = static_cast<char>(value);
+        m_stream->put(ch);
+    }
+
+    MemoryBinaryWriter::MemoryBinaryWriter(byte *buffer)
+    {
+        position = 0;
+        m_buffer = buffer;
+    }
+
+    void MemoryBinaryWriter::writeByte(byte value)
+    {
+        m_buffer[++position] = value;
+    }
+
 
     void BinaryWriter::writeBytes(int size, const byte value[])
     {
         for (int i=0; i<size; ++i)
-        {
-            char data = static_cast<char>(value[i]);
-            m_stream->put(data);
-        }
+            writeByte(value[i]);
     }
 
     void BinaryWriter::writeInt(int value)
     {
         writeBytes(4, reinterpret_cast<byte*>(&value));
     }
-
 
     void BinaryWriter::write7BitEncodedInt(int value)
     {
@@ -104,10 +128,9 @@ namespace scpak
     void BinaryWriter::writeString(const std::string &value)
     {
         write7BitEncodedInt(value.length());
-        // std::ostream_iterator<std::string::value_type> it(*m_stream);
-        // std::copy(value.begin(), value.end(), it);
-        m_stream->write(value.data(), value.length());
+        writeBytes(value.length(), reinterpret_cast<const byte*>(value.data()));
     }
+
 
     PakFile::PakFile()
     {
@@ -135,7 +158,7 @@ namespace scpak
         stream.read(reinterpret_cast<char*>(&header), sizeof(header));
         if (!header.checkMagic())
             throw std::runtime_error("bad pak file");
-        BinaryReader reader(&stream);
+        StreamBinaryReader reader(&stream);
         // read content dictionary
         for (int i=0; i<header.contentCount; ++i)
         {
@@ -169,7 +192,7 @@ namespace scpak
         // write file header for the first time
         PakHeader header;
         header.contentCount = m_contents.size();
-        BinaryWriter writer(&stream);
+        StreamBinaryWriter writer(&stream);
         stream.write(reinterpret_cast<char*>(&header), sizeof(header));
         // we do not know where the content will locate, so it is also
         // necessary to write content dictionary twice
