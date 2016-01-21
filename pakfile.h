@@ -15,7 +15,10 @@ namespace scpak
         void readBytes(int size, byte buf[]);
         int readInt();
         int read7BitEncodedInt();
+        int readUtf8Char();
         std::string readString();
+
+        static int getUtf8CharCount(const std::string &value);
     private:
         std::istream *m_stream;
     };
@@ -47,7 +50,8 @@ namespace scpak
         virtual void writeByte(byte value) = 0;
         void writeBytes(int size, const byte value[]);
         void writeInt(int value);
-        void write7BitEncodedInt(int value);
+        int write7BitEncodedInt(int value);
+        int writeUtf8Char(int value);
         void writeString(const std::string &value);
     private:
         std::ostream *m_stream;
