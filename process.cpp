@@ -53,19 +53,12 @@ namespace scpak
             std::stringstream lineBuffer;
             lineBuffer << item.name << ':' << item.type;
             std::string itemType = item.type;
-            if (itemType == "System.String")
+            if (itemType == "System.String" || itemType == "System.Xml.Linq.XElement")
             {
-                std::string fileName = dirPathSafe + item.name + ".txt";
-                unpack_string(fileName, item);
-            }
-            else if (itemType == "System.Xml.Linq.XElement")
-            {
-                std::string fileName = dirPathSafe + item.name + ".xml";
-                unpack_string(fileName, item);
-            }
+                unpack_string(dirPathSafe, item);
+            }  
             else if (itemType == "Engine.Graphics.Texture2D")
             {
-                // not ready yet
                 std::string fileName = dirPathSafe + item.name + ".tga";
                 const byte *data = item.data;
                 const int &width = *reinterpret_cast<const int*>(data);
@@ -75,6 +68,10 @@ namespace scpak
                 stbi_write_tga(fileName.c_str(), width, height, 4, imageData);
                 
                 lineBuffer << ':' << mipmapLevel;
+            }
+            else if (itemType == "Engine.Media.BitmapFont")
+            {
+                unpack_bitmapFont(dirPathSafe, item);
             }
             else
             {
@@ -128,13 +125,11 @@ namespace scpak
 
             if (type == "System.String")
             {
-                std::string filePath = dirPathSafe + name + ".txt";
-                pack_string(filePath, item);
+                pack_string(dirPathSafe, item);
             }
             else if (type == "System.Xml.Linq.XElement")
             {
-                std::string filePath = dirPathSafe + name + ".xml";
-                pack_string(filePath, item);
+                pack_string(dirPathSafe, item);
             }
             else if (type == "Engine.Graphics.Texture2D")
             {
@@ -147,8 +142,8 @@ namespace scpak
                     fileName += ".png";
                 else if (pathExists((filePathRaw + ".bmp").c_str()))
                     fileName += ".bmp";
-                //else if (pathExists(filePathRaw.c_str()))
-                //    goto pack_raw; // -_-
+                else if (pathExists(filePathRaw.c_str()))
+                    goto pack_raw; // -_-
                 else
                     throw std::runtime_error("cannot find image file: " + name);
                 int width, height, comp;
@@ -168,6 +163,10 @@ namespace scpak
                 std::memcpy(item.data + sizeof(int) * 3, data, width*height*comp);
                 stbi_image_free(data);
                 int offset = generateMipmap(width, height, mipmapLevel, item.data + sizeof(int) * 3);
+            }
+            else if (type == "Engine.Media.BitmapFont")
+            {
+                pack_bitmapFont(dirPathSafe, item);
             }
             else
             {
@@ -263,8 +262,16 @@ namespace scpak
         return offset;
     }
 
-    void unpack_string(const std::string &fileName, const PakItem &item)
+    void unpack_string(const std::string &outputPath, const PakItem &item)
     {
+        std::string fileName = outputPath + item.name;
+        if (std::strcmp(item.type, "System.String") == 0)
+            fileName += ".txt";
+        else if (std::strcmp(item.type, "System.Xml.Linq.XElement") == 0)
+            fileName += ".xml";
+        else
+            throw std::runtime_error("wrong item type");
+
         std::ofstream fout;
         fout.open(fileName, std::ios::binary);
         MemoryBinaryReader reader(item.data);
@@ -273,8 +280,16 @@ namespace scpak
         fout.close();
     }
 
-    void pack_string(const std::string &fileName, PakItem &item)
+    void pack_string(const std::string &inputPath, PakItem &item)
     {
+        std::string fileName = inputPath + item.name;
+        if (std::strcmp(item.type, "System.String") == 0)
+            fileName += ".txt";
+        else if (std::strcmp(item.type, "System.Xml.Linq.XElement") == 0)
+            fileName += ".xml";
+        else
+            throw std::runtime_error("wrong item type");
+
         if (item.data != nullptr)
             delete[] item.data;
         
@@ -293,6 +308,115 @@ namespace scpak
         item.length = fileSize + writer.position;
         fin.read(reinterpret_cast<char*>(item.data+writer.position), fileSize);
         fin.close();
+    }
+
+    void unpack_bitmapFont(const std::string &outputDir, const PakItem &item)
+    {
+        std::string listFileName = outputDir + item.name + ".lst";
+        std::string textureFileName = outputDir + item.name + ".tga";
+
+        MemoryBinaryReader reader(item.data);
+        int glyphCount = reader.readInt();
+        std::vector<GlyphInfo> glyphList;
+        glyphList.resize(glyphCount);
+        for (int i = 0; i < glyphCount; ++i)
+        {
+            GlyphInfo &glyph = glyphList[i];
+            glyph.unicode = reader.readUtf8Char();
+            glyph.texCoord1.x = reader.readFloat();
+            glyph.texCoord1.y = reader.readFloat();
+            glyph.texCoord2.x = reader.readFloat();
+            glyph.texCoord2.y = reader.readFloat();
+            glyph.offset.x = reader.readFloat();
+            glyph.offset.y = reader.readFloat();
+            glyph.width = reader.readFloat();
+        }
+        float glyphHeight = reader.readFloat();
+        Vector2f spacing;
+        spacing.x = reader.readFloat();
+        spacing.y = reader.readFloat();
+        float scale = reader.readFloat();
+        int fallbackCode = reader.readUtf8Char();
+
+        int width = reader.readInt();
+        int height = reader.readInt();
+        int mipmapLevel = reader.readInt();
+
+        stbi_write_tga(textureFileName.c_str(), width, height, 4, item.data + reader.position);
+
+        std::ofstream fList;
+        fList.open(listFileName);
+        fList << glyphCount << std::endl;
+        for (int i = 0; i < glyphCount; ++i)
+        {
+            GlyphInfo &glyph = glyphList[i];
+            fList << glyph.unicode << '\t'
+                << glyph.texCoord1.x << '\t' << glyph.texCoord1.y << '\t'
+                << glyph.texCoord2.x << '\t' << glyph.texCoord2.y << '\t'
+                << glyph.offset.x << '\t' << glyph.offset.y << '\t'
+                << glyph.width << std::endl;
+        }
+        fList << glyphHeight << std::endl;
+        fList << spacing.x << '\t' << spacing.y << std::endl;
+        fList << scale << std::endl;
+        fList << fallbackCode << std::endl;
+        fList.close();
+    }
+
+    void pack_bitmapFont(const std::string &inputDir, PakItem &item)
+    {
+        std::string listFileName = inputDir + item.name + ".lst";
+        std::string textureFileName = inputDir + item.name + ".tga";
+
+        if (item.data != nullptr)
+            delete[] item.data;
+        
+        std::ifstream fList;
+        fList.open(listFileName);
+        int glyphCount;
+        fList >> glyphCount;
+        
+        int width, height, comp;
+        unsigned char *data = stbi_load(textureFileName.c_str(), &width, &height, &comp, 4);
+        item.data = new byte[sizeof(GlyphInfo) * glyphCount + 50 + width*height * 4];
+
+        MemoryBinaryWriter writer(item.data);
+        writer.writeInt(glyphCount);
+        for (int i = 0; i < glyphCount; ++i)
+        {
+            GlyphInfo glyph;
+            fList >> glyph.unicode
+                >> glyph.texCoord1.x >> glyph.texCoord1.y
+                >> glyph.texCoord2.x >> glyph.texCoord2.y
+                >> glyph.offset.x >> glyph.offset.y
+                >> glyph.width;
+            writer.writeUtf8Char(glyph.unicode);
+            writer.writeFloat(glyph.texCoord1.x);
+            writer.writeFloat(glyph.texCoord1.y);
+            writer.writeFloat(glyph.texCoord2.x);
+            writer.writeFloat(glyph.texCoord2.y);
+            writer.writeFloat(glyph.offset.x);
+            writer.writeFloat(glyph.offset.y);
+            writer.writeFloat(glyph.width);
+        }
+        float glyphHeight; fList >> glyphHeight;
+        Vector2f spacing; fList >> spacing.x >> spacing.y;
+        float scale; fList >> scale;
+        int fallbackCode; fList >> fallbackCode;
+        writer.writeFloat(glyphHeight);
+        writer.writeFloat(spacing.x);
+        writer.writeFloat(spacing.y);
+        writer.writeFloat(scale);
+        writer.writeUtf8Char(fallbackCode);
+        fList.close();
+
+        writer.writeInt(width);
+        writer.writeInt(height);
+        writer.writeInt(1);
+        std::memcpy(item.data + writer.position, data, width*height * 4);
+        item.length = writer.position + width*height * 4;
+
+        stbi_image_free(data);
     }
 
     bool isPowerOfTwo(int n)
