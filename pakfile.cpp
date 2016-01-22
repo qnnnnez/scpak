@@ -25,6 +25,13 @@ namespace scpak
         return value;
     }
 
+    float BinaryReader::readFloat()
+    {
+        float value;
+        readBytes(4, reinterpret_cast<byte*>(&value));
+        return value;
+    }
+
     int BinaryReader::read7BitEncodedInt()
     {
         int value = 0;
@@ -159,6 +166,11 @@ namespace scpak
     }
 
     void BinaryWriter::writeInt(int value)
+    {
+        writeBytes(4, reinterpret_cast<byte*>(&value));
+    }
+
+    void BinaryWriter::writeFloat(float value)
     {
         writeBytes(4, reinterpret_cast<byte*>(&value));
     }

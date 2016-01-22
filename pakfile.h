@@ -14,6 +14,7 @@ namespace scpak
         virtual byte readByte() = 0;
         void readBytes(int size, byte buf[]);
         int readInt();
+        float readFloat();
         int read7BitEncodedInt();
         int readUtf8Char();
         std::string readString();
@@ -50,6 +51,7 @@ namespace scpak
         virtual void writeByte(byte value) = 0;
         void writeBytes(int size, const byte value[]);
         void writeInt(int value);
+        void writeFloat(float value);
         int write7BitEncodedInt(int value);
         int writeUtf8Char(int value);
         void writeString(const std::string &value);
