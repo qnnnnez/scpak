@@ -23,11 +23,18 @@ int main(int argc, char *argv[])
         return 1;
     }
     string path = argv[1];
+    if (!pathExists(path.c_str()))
+    {
+        cerr << "error: file/directory " << path << " does not exists" << endl;
+        return 1;
+    }
     if (isDirectory(path.c_str()))
     {
-        PakFile pak = pack(path);
         ofstream fout(path + ".pak", ios::binary);
+
+        PakFile pak = pack(path);
         pak.save(fout);
+
         fout.close();
     }
     else if (isNormalFile(path.c_str()))
@@ -40,6 +47,7 @@ int main(int argc, char *argv[])
             directoryName = path.substr(0, i);
         ifstream fin(path, ios::binary);
         PakFile pak;
+
         pak.load(fin);
         unpack(pak, directoryName);
     }

@@ -12,5 +12,7 @@ namespace scpak
 
     void unpack_string(const std::string &fileName, const PakItem &item);
     void pack_string(const std::string &value, PakItem &item);
+
+    bool isPowerOfTwo(int number);
 }
 

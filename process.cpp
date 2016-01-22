@@ -101,6 +101,8 @@ namespace scpak
         if (*dirPathSafe.rbegin() != pathsep)
             dirPathSafe += pathsep;
         std::ifstream fPakInfo(dirPathSafe + PakInfoFileName);
+        if (!fPakInfo)
+            throw std::runtime_error("cannot open " + dirPathSafe + PakInfoFileName);
         std::string line;
         int lineNumber = 1;
         while(std::getline(fPakInfo, line))
@@ -187,32 +189,77 @@ namespace scpak
 
     int calcMipmapSize(int width, int height, int level)
     {
+        if (level == 1)
+            return width * height;
+        if (!isPowerOfTwo(width) || !isPowerOfTwo(height))
+            throw std::runtime_error("generating mipmaps for non-power of 2 images not supported");
+
         int size = width * height;
-        while (width%2 == 0 && height%2 == 0 && level > 1)
+        while (width != 1 && height != 1 && level > 1)
         {
             width /= 2;
             height /= 2;
             --level;
             size += width * height;
         }
+        if (width == 1 && height != 1)
+            while (height != 1 && level > 1)
+            {
+                height /= 2;
+                --level;
+                size += width * height;
+            }
+        else if (height == 1 && width != 1)
+            while (width != 1 && level > 1)
+            {
+                width /= 2;
+                --level;
+                size += width*height;
+            }
         return size;
     }
 
     int generateMipmap(int width, int height, int level, unsigned char *image)
     {
         const int comp = 4;
+
+        if (level == 1)
+            return width * height * comp;
+        if (!isPowerOfTwo(width) || !isPowerOfTwo(height))
+            throw std::runtime_error("generating mipmaps for non-power of 2 images not supported");
+
         int offset = width * height * comp;
         int w=width, h=height;
-        while (w%2 == 0 && h%2 == 0 && level > 1)
+        while (w != 1 && h%2 != 1 && level > 1)
         {
             w /= 2;
             h /= 2;
+            --level;
             stbir_resize_uint8(image, width, height, 0,
                                image+offset, w, h, 0,
                                comp);
             offset += w * h * comp;
-            --level;
         }
+        if (w == 1 && h != 1)
+            while (h != 1 && level > 1)
+            {
+                h /= 2;
+                --level;
+                stbir_resize_uint8(image, width, height, 0,
+                                   image + offset, w, h, 0,
+                                   comp);
+                offset += w * h * comp;
+            }
+        else if (h == 1 && w != 1)
+            while (w != 1 && level > 1)
+            {
+                w /= 2;
+                --level;
+                stbir_resize_uint8(image, width, height, 0,
+                                   image + offset, w, h, 0,
+                                   comp);
+                offset += w * h * comp;
+            }
         return offset;
     }
 
@@ -246,6 +293,11 @@ namespace scpak
         item.length = fileSize + writer.position;
         fin.read(reinterpret_cast<char*>(item.data+writer.position), fileSize);
         fin.close();
+    }
+
+    bool isPowerOfTwo(int n)
+    {
+        return (n & (n - 1)) == 0;
     }
 }
 
