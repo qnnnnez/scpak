@@ -4,8 +4,10 @@
 
 namespace scpak
 {
-    PakFile pack(const std::string &dirPath);
-    void unpack(const PakFile &pak, const std::string &dirPath);
+    PakFile pack(const std::string &dirPath,
+                 bool packText=true, bool packTexture=true, bool packFont=true);
+    void unpack(const PakFile &pak, const std::string &dirPath,
+                bool unpackText=true, bool unpackTexture=true, bool unpackFont=true);
 
     int calcMipmapSize(int width, int height, int level=0);
     int generateMipmap(int width, int height, int level, unsigned char *image);

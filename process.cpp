@@ -21,7 +21,7 @@ namespace scpak
 {
     const char *PakInfoFileName = "scpak.info";
 
-    void unpack(const PakFile &pak, const std::string &dirPath)
+    void unpack(const PakFile &pak, const std::string &dirPath, bool unpackText, bool unpackTexture, bool unpackFont)
     {
         std::string dirPathSafe = dirPath;
         if (*dirPathSafe.rbegin() != pathsep)
@@ -53,11 +53,15 @@ namespace scpak
             std::stringstream lineBuffer;
             lineBuffer << item.name << ':' << item.type;
             std::string itemType = item.type;
-            if (itemType == "System.String" || itemType == "System.Xml.Linq.XElement")
+            if (unpackText && itemType == "System.String")
             {
                 unpack_string(dirPathSafe, item);
-            }  
-            else if (itemType == "Engine.Graphics.Texture2D")
+            }
+            else if (unpackText && itemType == "System.Xml.Linq.XElement")
+            {
+                unpack_string(dirPathSafe, item);
+            }
+            else if (unpackTexture && itemType == "Engine.Graphics.Texture2D")
             {
                 std::string fileName = dirPathSafe + item.name + ".tga";
                 const byte *data = item.data;
@@ -69,7 +73,7 @@ namespace scpak
                 
                 lineBuffer << ':' << mipmapLevel;
             }
-            else if (itemType == "Engine.Media.BitmapFont")
+            else if (unpackFont && itemType == "Engine.Media.BitmapFont")
             {
                 unpack_bitmapFont(dirPathSafe, item);
             }
@@ -90,7 +94,7 @@ namespace scpak
         fout.close();
     }
 
-    PakFile pack(const std::string &dirPath)
+    PakFile pack(const std::string &dirPath, bool packText, bool packTexture, bool packFont)
     {
         PakFile pak;
         std::vector<PakItem> contents = pak.contents();
@@ -123,15 +127,15 @@ namespace scpak
             item.type = new char[type.length()+1];
             strcpy(item.type, type.c_str());
 
-            if (type == "System.String")
+            if (packText && type == "System.String")
             {
                 pack_string(dirPathSafe, item);
             }
-            else if (type == "System.Xml.Linq.XElement")
+            else if (packText && type == "System.Xml.Linq.XElement")
             {
                 pack_string(dirPathSafe, item);
             }
-            else if (type == "Engine.Graphics.Texture2D")
+            else if (packTexture && type == "Engine.Graphics.Texture2D")
             {
                 // not ready yet
                 std::string filePathRaw = dirPathSafe + name;
@@ -164,7 +168,7 @@ namespace scpak
                 stbi_image_free(data);
                 int offset = generateMipmap(width, height, mipmapLevel, item.data + sizeof(int) * 3);
             }
-            else if (type == "Engine.Media.BitmapFont")
+            else if (packFont && type == "Engine.Media.BitmapFont")
             {
                 pack_bitmapFont(dirPathSafe, item);
             }
