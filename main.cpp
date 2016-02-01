@@ -17,12 +17,19 @@ void printUsage(int argc, char *argv[])
 
 int main(int argc, char *argv[])
 {
+    string path;
     if (argc != 2)
     {
         printUsage(argc, argv);
-        return 1;
+        cout << endl;
+        cout << "Enter a directory to pack or a .pak file to unpack: ";
+        cin >> path;
     }
-    string path = argv[1];
+    else
+    {
+        path = argv[1];
+    }
+
     if (!pathExists(path.c_str()))
     {
         cerr << "error: file/directory " << path << " does not exists" << endl;
