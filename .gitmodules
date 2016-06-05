@@ -4,3 +4,6 @@
 [submodule "OptionHandler"]
 	path = OptionHandler
 	url = https://github.com/ryngonzalez/OptionHandler.git
+[submodule "stb"]
+	path = stb
+	url = https://github.com/nothings/stb.git

@@ -8,9 +8,9 @@
 #include <cstring>
 #include <iostream>
 
-#include "stb_image.h"
-#include "stb_image_write.h"
-#include "stb_image_resize.h"
+#include "stb/stb_image.h"
+#include "stb/stb_image_write.h"
+#include "stb/stb_image_resize.h"
 
 #if defined(_MSC_VER)
 # pragma warning(disable: 4996)
