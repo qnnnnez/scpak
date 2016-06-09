@@ -18,12 +18,14 @@ void printUsage(int argc, char *argv[])
 int main(int argc, char *argv[])
 {
     string path;
+    bool interactive = false;
     if (argc != 2)
     {
         printUsage(argc, argv);
         cout << endl;
         cout << "Enter a directory to pack or a .pak file to unpack: ";
         cin >> path;
+        interactive = true;
     }
     else
     {
@@ -58,5 +60,7 @@ int main(int argc, char *argv[])
         pak.load(fin);
         unpack(pak, directoryName);
     }
+    if (interactive)
+        cout << "Done." << endl;
     return 0;
 }
