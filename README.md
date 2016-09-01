@@ -2,7 +2,7 @@
 A packer/unpacker of Content.pak from [Survivalcraft](https://kaalus.wordpress.com/).
 
 ## Build
-Use cmake to build a binary. Remember to do a ```git submodule init``` before building.
+Use cmake to build a binary. Remember to do a ```git submodule update --init``` before building.
 
 ## Usage
 ### To Unpack a Content.pak File:
