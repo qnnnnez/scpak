@@ -12,10 +12,6 @@
 #include "stb/stb_image_write.h"
 #include "stb/stb_image_resize.h"
 
-#if defined(_MSC_VER)
-# pragma warning(disable: 4996)
-# pragma warning(disable: 4244)
-#endif
 
 namespace scpak
 {
@@ -64,7 +60,7 @@ namespace scpak
             else if (unpackTexture && itemType == "Engine.Graphics.Texture2D")
             {
                 std::string fileName = dirPathSafe + item.name + ".tga";
-                const byte *data = item.data;
+                const byte *data = item.data.data();
                 const int &width = *reinterpret_cast<const int*>(data);
                 const int &height = *(reinterpret_cast<const int*>(data) + 1);
                 const int &mipmapLevel = *(reinterpret_cast<const int*>(data) + 2);
@@ -82,7 +78,7 @@ namespace scpak
             unpack_raw:
                 // just write out raw data
                 std::ofstream fout(dirPathSafe + item.name, std::ios::binary);
-                fout.write(reinterpret_cast<char*>(item.data), item.length);
+                fout.write(reinterpret_cast<const char*>(item.data.data()), item.length);
                 fout.close();
             }
             infoLines.push_back(lineBuffer.str());
@@ -122,10 +118,8 @@ namespace scpak
             if (split2 != std::string::npos)
                 extraInfo = line.substr(split2+1, std::string::npos);
             PakItem item;
-            item.name = new char[name.length()+1];
-            strcpy(item.name, name.c_str());
-            item.type = new char[type.length()+1];
-            strcpy(item.type, type.c_str());
+            item.name = name;
+            item.type = type;
 
             if (packText && type == "System.String")
             {
@@ -160,13 +154,13 @@ namespace scpak
                 if (!extraInfo.empty())
                     std::stringstream(extraInfo) >> mipmapLevel;
                 item.length = sizeof(int) * 3 + calcMipmapSize(width, height, mipmapLevel) * comp;
-                item.data = new byte[item.length];
-                *reinterpret_cast<int*>(item.data) = width;
-                *(reinterpret_cast<int*>(item.data) + 1) = height;
-                *(reinterpret_cast<int*>(item.data) + 2) = mipmapLevel;
-                std::memcpy(item.data + sizeof(int) * 3, data, width*height*comp);
+                item.data.resize(item.length);
+                *reinterpret_cast<int*>(item.data.data()) = width;
+                *(reinterpret_cast<int*>(item.data.data()) + 1) = height;
+                *(reinterpret_cast<int*>(item.data.data()) + 2) = mipmapLevel;
+                std::memcpy(item.data.data() + sizeof(int) * 3, data, width*height*comp);
                 stbi_image_free(data);
-                int offset = generateMipmap(width, height, mipmapLevel, item.data + sizeof(int) * 3);
+                int offset = generateMipmap(width, height, mipmapLevel, item.data.data() + sizeof(int) * 3);
             }
             else if (packFont && type == "Engine.Media.BitmapFont")
             {
@@ -178,9 +172,9 @@ namespace scpak
                 std::string filePath = dirPathSafe + name;
                 int fileSize = getFileSize(filePath.c_str());
                 std::ifstream file(filePath, std::ios::binary);
-                item.data = new byte[fileSize];
+                item.data.resize(fileSize);
                 item.length = fileSize;
-                file.read(reinterpret_cast<char*>(item.data), fileSize);
+                file.read(reinterpret_cast<char*>(item.data.data()), fileSize);
                 file.close();
             }
             pak.addItem(std::move(item));
@@ -269,16 +263,16 @@ namespace scpak
     void unpack_string(const std::string &outputPath, const PakItem &item)
     {
         std::string fileName = outputPath + item.name;
-        if (std::strcmp(item.type, "System.String") == 0)
+        if (item.type == "System.String")
             fileName += ".txt";
-        else if (std::strcmp(item.type, "System.Xml.Linq.XElement") == 0)
+        else if (item.type == "System.Xml.Linq.XElement")
             fileName += ".xml";
         else
             throw std::runtime_error("wrong item type");
 
         std::ofstream fout;
         fout.open(fileName, std::ios::binary);
-        MemoryBinaryReader reader(item.data);
+        MemoryBinaryReader reader(item.data.data());
         std::string value = reader.readString();
         fout.write(value.data(), value.length());
         fout.close();
@@ -287,15 +281,12 @@ namespace scpak
     void pack_string(const std::string &inputPath, PakItem &item)
     {
         std::string fileName = inputPath + item.name;
-        if (std::strcmp(item.type, "System.String") == 0)
+        if (item.type == "System.String")
             fileName += ".txt";
-        else if (std::strcmp(item.type, "System.Xml.Linq.XElement") == 0)
+        else if (item.type == "System.Xml.Linq.XElement")
             fileName += ".xml";
         else
             throw std::runtime_error("wrong item type");
-
-        if (item.data != nullptr)
-            delete[] item.data;
         
         std::ifstream fin;
         fin.open(fileName, std::ios::binary);
@@ -306,11 +297,11 @@ namespace scpak
         int fileSize = offsetEnd - offsetBeg;
         fin.seekg(0, std::ios::beg);
 
-        item.data = new byte[fileSize+5];
-        MemoryBinaryWriter writer(item.data);
+        item.data.resize(fileSize+5);
+        MemoryBinaryWriter writer(item.data.data());
         writer.write7BitEncodedInt(fileSize);
         item.length = fileSize + writer.position;
-        fin.read(reinterpret_cast<char*>(item.data+writer.position), fileSize);
+        fin.read(reinterpret_cast<char*>(item.data.data()+writer.position), fileSize);
         fin.close();
     }
 
@@ -319,7 +310,7 @@ namespace scpak
         std::string listFileName = outputDir + item.name + ".lst";
         std::string textureFileName = outputDir + item.name + ".tga";
 
-        MemoryBinaryReader reader(item.data);
+        MemoryBinaryReader reader(item.data.data());
         int glyphCount = reader.readInt();
         std::vector<GlyphInfo> glyphList;
         glyphList.resize(glyphCount);
@@ -346,7 +337,7 @@ namespace scpak
         int height = reader.readInt();
         int mipmapLevel = reader.readInt();
 
-        stbi_write_tga(textureFileName.c_str(), width, height, 4, item.data + reader.position);
+        stbi_write_tga(textureFileName.c_str(), width, height, 4, item.data.data() + reader.position);
 
         std::ofstream fList;
         fList.open(listFileName);
@@ -371,9 +362,6 @@ namespace scpak
     {
         std::string listFileName = inputDir + item.name + ".lst";
         std::string textureFileName = inputDir + item.name + ".tga";
-
-        if (item.data != nullptr)
-            delete[] item.data;
         
         std::ifstream fList;
         fList.open(listFileName);
@@ -382,9 +370,9 @@ namespace scpak
         
         int width, height, comp;
         unsigned char *data = stbi_load(textureFileName.c_str(), &width, &height, &comp, 4);
-        item.data = new byte[sizeof(GlyphInfo) * glyphCount + 50 + width*height * 4];
+        item.data.resize(sizeof(GlyphInfo) * glyphCount + 50 + width*height * 4);
 
-        MemoryBinaryWriter writer(item.data);
+        MemoryBinaryWriter writer(item.data.data());
         writer.writeInt(glyphCount);
         for (int i = 0; i < glyphCount; ++i)
         {
@@ -417,7 +405,7 @@ namespace scpak
         writer.writeInt(width);
         writer.writeInt(height);
         writer.writeInt(1);
-        std::memcpy(item.data + writer.position, data, width*height * 4);
+        std::memcpy(item.data.data() + writer.position, data, width*height * 4);
         item.length = writer.position + width*height * 4;
 
         stbi_image_free(data);

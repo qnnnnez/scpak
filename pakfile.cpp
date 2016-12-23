@@ -5,10 +5,6 @@
 #include <algorithm>
 #include <cstring>
 
-#if defined(_MSC_VER)
-# pragma warning(disable: 4996)
-# pragma warning(disable: 4244)
-#endif
 
 namespace scpak
 {
@@ -262,25 +258,6 @@ namespace scpak
     }
 
 
-    PakFile::PakFile()
-    {
-    }
-
-    PakFile::PakFile(PakFile &&other):
-        m_contents(std::move(other.m_contents))
-    {
-    }
-
-    PakFile::~PakFile()
-    {
-        for (const PakItem &item : m_contents)
-        {
-            delete[] item.name;
-            delete[] item.type;
-            delete[] item.data;
-        }
-    }
-
     void PakFile::load(std::istream &stream)
     {
         // read header
@@ -292,25 +269,19 @@ namespace scpak
         // read content dictionary
         for (int i=0; i<header.contentCount; ++i)
         {
-            std::string name = reader.readString();
-            std::string type = reader.readString();
-            int offset = reader.readInt();
-            int length = reader.readInt();
             PakItem item;
-            item.name = new char[name.length()+1];
-            std::strcpy(item.name, name.c_str());
-            item.type = new char[type.length()+1];
-            std::strcpy(item.type, type.c_str());
-            item.offset = offset;
-            item.length = length;
+            item.name = reader.readString();
+            item.type = reader.readString();
+            item.offset = reader.readInt();
+            item.length = reader.readInt();
             m_contents.push_back(item);
         }
         // read all contents
         for (PakItem &item : m_contents)
         {
             stream.seekg(header.contentOffset + item.offset, std::ios::beg);
-            item.data = new byte[item.length];
-            stream.read(reinterpret_cast<char*>(item.data), item.length);
+            item.data.resize(item.length);
+            stream.read(reinterpret_cast<char*>(item.data.data()), item.length);
             item.offset = -1; // we will not be able to access the stream
         }
     }
@@ -345,7 +316,7 @@ namespace scpak
             stream.put(0xBE);
             stream.put(0xEF);
             item.offset = static_cast<int>(stream.tellp()) - header.contentOffset;
-            stream.write(reinterpret_cast<char*>(item.data), item.length);
+            stream.write(reinterpret_cast<char*>(item.data.data()), item.length);
         }
 
         header.fileLength = stream.tellp();
@@ -370,23 +341,12 @@ namespace scpak
 
     void PakFile::addItem(const PakItem &item)
     {
-        PakItem newItem;
-        newItem.name = new char[strlen(item.name)+1];
-        strcpy(newItem.name, item.name);
-        newItem.type = new char[strlen(item.type)+1];
-        strcpy(newItem.type, item.type);
-        newItem.length = item.length;
-        newItem.data = new byte[newItem.length];
-        memcpy(newItem.data, item.data, newItem.length);
-        m_contents.push_back(newItem);
+        m_contents.push_back(item);
     }
 
     void PakFile::addItem(PakItem &&item)
     {
-        m_contents.push_back(item);
-        item.name = nullptr;
-        item.type = nullptr;
-        item.data = nullptr;
+        m_contents.push_back(std::move(item));
     }
 
     PakItem& PakFile::getItem(std::size_t where)
@@ -396,15 +356,6 @@ namespace scpak
 
     void PakFile::removeItem(std::size_t where)
     {
-        m_contents.erase(m_contents.begin()+where);
-    }
-
-    void PakFile::deleteItem(std::size_t where)
-    {
-        PakItem &item = m_contents.at(where);
-        delete[] item.name;
-        delete[] item.type;
-        delete[] item.data;
         m_contents.erase(m_contents.begin()+where);
     }
 }

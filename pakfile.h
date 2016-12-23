@@ -3,6 +3,7 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <string>
 
 namespace scpak
 {
@@ -95,27 +96,22 @@ namespace scpak
 
     typedef struct // PakItem
     {
-        char *name = nullptr;
-        char *type = nullptr;
+        std::string name;
+        std::string type;
         int offset = -1;
         int length = -1;
-        byte *data = nullptr;
+        std::vector<byte> data;
     } PakItem;
 
     class PakFile
     {
     public:
-        PakFile();
-        ~PakFile();
-        PakFile(const PakFile &) = delete;
-        PakFile(PakFile &&);
         void load(std::istream &stream);
         void save(std::ostream &stream);
         const std::vector<PakItem>& contents() const;
         void addItem(const PakItem &item);
         void addItem(PakItem &&item);
         PakItem& getItem(std::size_t where);
-        void deleteItem(std::size_t where);
         void removeItem(std::size_t where);
     private:
         std::vector<PakItem> m_contents;
