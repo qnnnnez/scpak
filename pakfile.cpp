@@ -274,7 +274,7 @@ namespace scpak
             item.type = reader.readString();
             item.offset = reader.readInt();
             item.length = reader.readInt();
-            m_contents.push_back(item);
+            addItem(std::move(item));
         }
         // read all contents
         for (PakItem &item : m_contents)
