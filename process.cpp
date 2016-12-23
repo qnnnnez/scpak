@@ -15,7 +15,7 @@
 
 namespace scpak
 {
-    const char *PakInfoFileName = "scpak.info";
+    const char *PakInfoFileName = "scpak.meta";
 
     void unpack(const PakFile &pak, const std::string &dirPath, bool unpackText, bool unpackTexture, bool unpackFont)
     {
