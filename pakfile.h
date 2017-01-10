@@ -5,10 +5,10 @@
 #include <vector>
 #include <string>
 
+#include "scpak.h"
+
 namespace scpak
 {
-    typedef unsigned char byte;
-
     class BinaryReader
     {
     public:
