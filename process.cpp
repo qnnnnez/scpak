@@ -1,5 +1,6 @@
 #include "process.h"
 #include "native.h"
+#include "wav.h"
 #include <stdexcept>
 #include <set>
 #include <vector>
@@ -17,7 +18,7 @@ namespace scpak
 {
     const char *PakInfoFileName = "scpak.meta";
 
-    void unpack(const PakFile &pak, const std::string &dirPath, bool unpackText, bool unpackTexture, bool unpackFont)
+    void unpack(const PakFile &pak, const std::string &dirPath, bool unpackText, bool unpackTexture, bool unpackFont, bool unpackSound)
     {
         std::string dirPathSafe = dirPath;
         if (*dirPathSafe.rbegin() != pathsep)
@@ -73,6 +74,10 @@ namespace scpak
             {
                 unpack_bitmapFont(dirPathSafe, item);
             }
+            else if (unpackSound && itemType == "Engine.Audio.SoundBuffer")
+            {
+                unpack_soundBuffer(dirPathSafe, item);
+            }
             else
             {
             unpack_raw:
@@ -90,7 +95,7 @@ namespace scpak
         fout.close();
     }
 
-    PakFile pack(const std::string &dirPath, bool packText, bool packTexture, bool packFont)
+    PakFile pack(const std::string &dirPath, bool packText, bool packTexture, bool packFont, bool packSound)
     {
         PakFile pak;
         std::vector<PakItem> contents = pak.contents();
@@ -165,6 +170,10 @@ namespace scpak
             else if (packFont && type == "Engine.Media.BitmapFont")
             {
                 pack_bitmapFont(dirPathSafe, item);
+            }
+            else if (packSound && type == "Engine.Audio.SoundBuffer")
+            {
+                pack_soundBuffer(dirPathSafe, item);
             }
             else
             {
@@ -411,9 +420,75 @@ namespace scpak
         stbi_image_free(data);
     }
 
-    bool isPowerOfTwo(int n)
+    void unpack_soundBuffer(const std::string &outputDir, const PakItem &item)
     {
-        return (n & (n - 1)) == 0;
+        static const int bitsPerSample = 16;
+
+        MemoryBinaryReader reader(item.data.data());
+
+        bool oggCompressed = reader.readBoolean();
+
+        if (!oggCompressed)
+        {
+            std::string listFileName = outputDir + item.name + ".wav";
+            WavHeader header;
+            WavHeader::SetMagicValues(header);
+            header.channelCount = reader.readInt();
+            header.sampleRate = reader.readInt();
+            header.subchunk2Size = reader.readInt();
+
+            header.bitsPerSample = bitsPerSample;
+            header.byteRate = header.sampleRate * bitsPerSample / 8;
+            header.chunkSize = header.subchunk2Size + 36;
+
+            const byte *sound = item.data.data() + reader.position;
+            std::ofstream fout(listFileName, std::ios::binary);
+            fout.write(reinterpret_cast<const char*>(&header), sizeof(header));
+            fout.write(reinterpret_cast<const char*>(sound), header.subchunk2Size);
+            fout.close();
+        }
+        else
+        {
+            std::ofstream(outputDir + item.name, std::ios::binary).write(reinterpret_cast<const char*>(item.data.data()), item.data.size());
+        }
+    }
+
+    void pack_soundBuffer(const std::string &inputDir, PakItem &item)
+    {
+        std::string inputFilePathBase = inputDir + item.name;
+        if (pathExists(inputFilePathBase.c_str()))
+        {
+            int fileSize = getFileSize(inputFilePathBase.c_str());
+            std::ifstream file(inputFilePathBase, std::ios::binary);
+            item.data.resize(fileSize);
+            item.length = fileSize;
+            file.read(reinterpret_cast<char*>(item.data.data()), fileSize);
+            file.close();
+        }
+        else if (pathExists((inputFilePathBase + ".wav").c_str()))
+        {
+            static const int bitsPerSample = 16;
+
+            std::string fileName = inputFilePathBase + ".wav";
+            std::ifstream fin(fileName, std::ios::binary);
+            WavHeader header;
+            fin.read(reinterpret_cast<char*>(&header), sizeof(header));
+            item.data.resize(header.subchunk2Size + 13);
+            MemoryBinaryWriter writer(item.data.data());
+            writer.writeBoolean(false);
+            writer.writeInt(header.channelCount);
+            writer.writeInt(header.sampleRate);
+            writer.writeInt(header.subchunk2Size);
+            
+            if (header.bitsPerSample != 16)
+            {
+                throw std::runtime_error("WAV-" + fileName + ": bitsPerSample must be 16.");
+            }
+
+            fin.read(reinterpret_cast<char*>(item.data.data() + writer.position), header.subchunk2Size);
+            fin.close();
+            item.length = item.data.size();
+        }
     }
 }
 
