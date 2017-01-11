@@ -1,4 +1,5 @@
 #include "binaryio.h"
+#include <stdexcept>
 
 namespace scpak
 {
