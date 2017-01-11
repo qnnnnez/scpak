@@ -1,6 +1,7 @@
 #include "pakfile.h"
 #include "process.h"
 #include "native.h"
+#include <iostream>
 #include <sstream>
 #include <fstream>
 
