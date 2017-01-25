@@ -9,21 +9,21 @@ namespace scpak
             buf[i] = readByte();
     }
 
-    int BinaryReader::readInt()
+    std::int32_t BinaryReader::readInt32()
     {
         int value;
         readBytes(4, reinterpret_cast<byte*>(&value));
         return value;
     }
 
-    float BinaryReader::readFloat()
+    std::float_t BinaryReader::readSingle()
     {
         float value;
         readBytes(4, reinterpret_cast<byte*>(&value));
         return value;
     }
 
-    int BinaryReader::read7BitEncodedInt()
+    std::int32_t BinaryReader::read7BitEncodedInt()
     {
         int value = 0;
         int offset = 0;
@@ -79,7 +79,7 @@ namespace scpak
 
     bool BinaryReader::readBoolean()
     {
-        return bool(readByte());
+        return readByte() ? true : false;
     }
 
     std::string BinaryReader::readString()
@@ -161,17 +161,17 @@ namespace scpak
             writeByte(value[i]);
     }
 
-    void BinaryWriter::writeInt(int value)
+    void BinaryWriter::writeInt(std::int32_t value)
     {
         writeBytes(4, reinterpret_cast<byte*>(&value));
     }
 
-    void BinaryWriter::writeFloat(float value)
+    void BinaryWriter::writeFloat(std::float_t value)
     {
         writeBytes(4, reinterpret_cast<byte*>(&value));
     }
 
-    int BinaryWriter::write7BitEncodedInt(int value)
+    int BinaryWriter::write7BitEncodedInt(std::int32_t value)
     {
         int count = 0;
         while (value > 127)

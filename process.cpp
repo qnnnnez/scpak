@@ -320,31 +320,31 @@ namespace scpak
         std::string textureFileName = outputDir + item.name + ".tga";
 
         MemoryBinaryReader reader(item.data.data());
-        int glyphCount = reader.readInt();
+        int glyphCount = reader.readInt32();
         std::vector<GlyphInfo> glyphList;
         glyphList.resize(glyphCount);
         for (int i = 0; i < glyphCount; ++i)
         {
             GlyphInfo &glyph = glyphList[i];
             glyph.unicode = reader.readUtf8Char();
-            glyph.texCoord1.x = reader.readFloat();
-            glyph.texCoord1.y = reader.readFloat();
-            glyph.texCoord2.x = reader.readFloat();
-            glyph.texCoord2.y = reader.readFloat();
-            glyph.offset.x = reader.readFloat();
-            glyph.offset.y = reader.readFloat();
-            glyph.width = reader.readFloat();
+            glyph.texCoord1.x = reader.readSingle();
+            glyph.texCoord1.y = reader.readSingle();
+            glyph.texCoord2.x = reader.readSingle();
+            glyph.texCoord2.y = reader.readSingle();
+            glyph.offset.x = reader.readSingle();
+            glyph.offset.y = reader.readSingle();
+            glyph.width = reader.readSingle();
         }
-        float glyphHeight = reader.readFloat();
+        float glyphHeight = reader.readSingle();
         Vector2f spacing;
-        spacing.x = reader.readFloat();
-        spacing.y = reader.readFloat();
-        float scale = reader.readFloat();
+        spacing.x = reader.readSingle();
+        spacing.y = reader.readSingle();
+        float scale = reader.readSingle();
         int fallbackCode = reader.readUtf8Char();
 
-        int width = reader.readInt();
-        int height = reader.readInt();
-        int mipmapLevel = reader.readInt();
+        int width = reader.readInt32();
+        int height = reader.readInt32();
+        int mipmapLevel = reader.readInt32();
 
         stbi_write_tga(textureFileName.c_str(), width, height, 4, item.data.data() + reader.position);
 
@@ -433,9 +433,9 @@ namespace scpak
             std::string listFileName = outputDir + item.name + ".wav";
             WavHeader header;
             WavHeader::SetMagicValues(header);
-            header.channelCount = reader.readInt();
-            header.sampleRate = reader.readInt();
-            header.subchunk2Size = reader.readInt();
+            header.channelCount = reader.readInt32();
+            header.sampleRate = reader.readInt32();
+            header.subchunk2Size = reader.readInt32();
 
             header.bitsPerSample = bitsPerSample;
             header.byteRate = header.sampleRate * bitsPerSample / 8;

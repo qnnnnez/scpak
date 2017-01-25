@@ -22,8 +22,8 @@ namespace scpak
             PakItem item;
             item.name = reader.readString();
             item.type = reader.readString();
-            item.offset = reader.readInt();
-            item.length = reader.readInt();
+            item.offset = reader.readInt32();
+            item.length = reader.readInt32();
             addItem(std::move(item));
         }
         // read all contents

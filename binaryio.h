@@ -13,9 +13,9 @@ namespace scpak
     public:
         virtual byte readByte() = 0;
         void readBytes(int size, byte buf[]);
-        int readInt();
-        float readFloat();
-        int read7BitEncodedInt();
+        std::int32_t readInt32();
+        std::float_t readSingle();
+        std::int32_t read7BitEncodedInt();
         int readUtf8Char();
         bool readBoolean();
         std::string readString();

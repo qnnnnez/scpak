@@ -22,20 +22,5 @@ namespace scpak
 
     void unpack_soundBuffer(const std::string &outputDir, const PakItem &item);
     void pack_soundBuffer(const std::string &inputDir, PakItem &item);
-
-    struct Vector2f
-    {
-        float x;
-        float y;
-    };
-
-    struct GlyphInfo
-    {
-        int unicode;
-        Vector2f texCoord1;
-        Vector2f texCoord2;
-        Vector2f offset;
-        float width;
-    };
 }
 
