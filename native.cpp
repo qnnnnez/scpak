@@ -1,7 +1,7 @@
 #include <string>
 #include <stdexcept>
 
-#if defined(__linux__)
+#if defined(__linux__) || defined(__APPLE__)
 # include <unistd.h>
 # include <sys/types.h>
 # include <sys/stat.h>
@@ -102,4 +102,6 @@ namespace scpak
         return (attributes & FILE_ATTRIBUTE_NORMAL) != 0 || (attributes & FILE_ATTRIBUTE_ARCHIVE) != 0;
     }
 }
+#else
+# error scpak: Not a supported platform.
 #endif
