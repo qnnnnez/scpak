@@ -7,12 +7,6 @@
 
 namespace scpak
 {
-    void unpack_raw(const std::string &outputDir, const PakItem &item);
-    void unpack_string(const std::string &outputDir, const PakItem &item);
-    void unpack_bitmapFont(const std::string &outputDir, const PakItem &item);
-    void unpack_texture(const std::string &outputDir, const PakItem &item, std::iostream &meta);
-    void unpack_soundBuffer(const std::string &outputDir, const PakItem &item);
-
     typedef std::function<void(const std::string &outputDir, const PakItem &item, std::iostream &meta)> unpacker_type;
     void unpack(
         const PakFile &pak, const std::string &dirPath,
@@ -22,6 +16,13 @@ namespace scpak
         bool unpack_text = false,
         bool unpack_bitmapFont = false,
         bool unpack_texture = false,
-        bool unpack_soundBuffer = false);
+        bool unpack_sound = false);
+    void unpackAll(const PakFile &pak, const std::string &dirPath);
+
+    void unpack_raw(const std::string &outputDir, const PakItem &item);
+    void unpack_string(const std::string &outputDir, const PakItem &item);
+    void unpack_bitmapFont(const std::string &outputDir, const PakItem &item);
+    void unpack_texture(const std::string &outputDir, const PakItem &item, std::iostream &meta);
+    void unpack_soundBuffer(const std::string &outputDir, const PakItem &item);
 }
 

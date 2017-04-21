@@ -69,8 +69,7 @@ namespace scpak
         old_unpacker(outputDir, item);
     }
 
-    void unpack(const PakFile &pak, const std::string &dirPath,
-        bool unpackText, bool unpackBitmapFont, bool unpackTexture, bool unpackSoundBuffer)
+    void unpack(const PakFile &pak, const std::string &dirPath, bool unpackText, bool unpackBitmapFont, bool unpackTexture, bool unpackSound)
     {
         std::map<std::string, unpacker_type> unpackers;
         if (unpackText)
@@ -79,19 +78,19 @@ namespace scpak
             unpackers.insert(std::pair<std::string, unpacker_type>("System.Xml.Linq.XElement", unpacker_wrapper<unpack_string>));
         }
         if (unpackTexture)
-        {
             unpackers.insert(std::pair<std::string, unpacker_type>("Engine.Graphics.Texture2D", unpack_texture));
-        }
         if (unpackBitmapFont)
-        {
             unpackers.insert(std::pair<std::string, unpacker_type>("Engine.Media.BitmapFont", unpacker_wrapper<unpack_bitmapFont>));
-        }
-        if (unpackSoundBuffer)
-        {
+        if (unpackSound)
             unpackers.insert(std::pair<std::string, unpacker_type>("Engine.Audio.SoundBuffer", unpacker_wrapper<unpack_soundBuffer>));
-        }
+        
         unpacker_type defaultUnpacker = unpacker_wrapper<unpack_raw>;
         unpack(pak, dirPath, unpackers, defaultUnpacker);
+    }
+
+    void unpackAll(const PakFile & pak, const std::string & dirPath)
+    {
+        unpack(pak, dirPath, true, true, true, true);
     }
 
     

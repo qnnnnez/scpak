@@ -1,5 +1,6 @@
 #include "pakfile.h"
-#include "process.h"
+#include "pack.h"
+#include "unpack.h"
 #include "native.h"
 #include <iostream>
 #include <sstream>
@@ -42,7 +43,7 @@ int main(int argc, char *argv[])
     {
         ofstream fout(path + ".pak", ios::binary);
 
-        PakFile pak = pack(path);
+        PakFile pak = packAll(path);
         pak.save(fout);
 
         fout.close();
@@ -59,7 +60,7 @@ int main(int argc, char *argv[])
         PakFile pak;
 
         pak.load(fin);
-        unpack(pak, directoryName);
+        unpackAll(pak, directoryName);
     }
     if (interactive)
         cout << "Done." << endl;

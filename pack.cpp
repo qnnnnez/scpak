@@ -16,7 +16,17 @@
 
 namespace scpak
 {
-    PakFile pack(const std::string &dirPath, bool packText, bool packTexture, bool packFont, bool packSound)
+    int calcMipmapSize(int width, int height, int level = 0);
+    int generateMipmap(int width, int height, int level, unsigned char *image);
+
+    template<void old_packer(const std::string &inputDir, PakItem &output)>
+    void packer_wrapper(const std::string &inputDir, PakItem &output, const std::string &meta)
+    {
+        old_packer(inputDir, output);
+    }
+
+
+    PakFile pack(const std::string &dirPath, const std::map<std::string, packer_type> &packers, const packer_type &default_packer)
     {
         PakFile pak;
         std::vector<PakItem> contents = pak.contents();
@@ -47,66 +57,12 @@ namespace scpak
             item.name = name;
             item.type = type;
 
-            if (packText && type == "System.String")
-            {
-                pack_string(dirPathSafe, item);
-            }
-            else if (packText && type == "System.Xml.Linq.XElement")
-            {
-                pack_string(dirPathSafe, item);
-            }
-            else if (packTexture && type == "Engine.Graphics.Texture2D")
-            {
-                // not ready yet
-                std::string filePathRaw = dirPathSafe + name;
-                std::string fileName = filePathRaw;
-                if (pathExists((filePathRaw + ".tga").c_str()))
-                    fileName += ".tga";
-                else if (pathExists((filePathRaw + ".png").c_str()))
-                    fileName += ".png";
-                else if (pathExists((filePathRaw + ".bmp").c_str()))
-                    fileName += ".bmp";
-                else if (pathExists(filePathRaw.c_str()))
-                    goto pack_raw; // -_-
-                else
-                    throw std::runtime_error("cannot find image file: " + name);
-                int width, height, comp;
-                unsigned char *data = stbi_load(fileName.c_str(), &width, &height, &comp, 0);
-                if (data == nullptr)
-                    throw std::runtime_error("cannot load image file: " + name);
-                if (comp != 4)
-                    throw std::runtime_error("image must have 4 components in every pixel: " + name);
-                int mipmapLevel = 0;
-                if (!extraInfo.empty())
-                    std::stringstream(extraInfo) >> mipmapLevel;
-                item.length = sizeof(int) * 3 + calcMipmapSize(width, height, mipmapLevel) * comp;
-                item.data.resize(item.length);
-                *reinterpret_cast<int*>(item.data.data()) = width;
-                *(reinterpret_cast<int*>(item.data.data()) + 1) = height;
-                *(reinterpret_cast<int*>(item.data.data()) + 2) = mipmapLevel;
-                std::memcpy(item.data.data() + sizeof(int) * 3, data, width*height*comp);
-                stbi_image_free(data);
-                int offset = generateMipmap(width, height, mipmapLevel, item.data.data() + sizeof(int) * 3);
-            }
-            else if (packFont && type == "Engine.Media.BitmapFont")
-            {
-                pack_bitmapFont(dirPathSafe, item);
-            }
-            else if (packSound && type == "Engine.Audio.SoundBuffer")
-            {
-                pack_soundBuffer(dirPathSafe, item);
-            }
+            auto it = packers.find(item.type);
+            if (it != packers.end())
+                it->second(dirPathSafe, item, extraInfo);
             else
-            {
-            pack_raw:
-                std::string filePath = dirPathSafe + name;
-                int fileSize = getFileSize(filePath.c_str());
-                std::ifstream file(filePath, std::ios::binary);
-                item.data.resize(fileSize);
-                item.length = fileSize;
-                file.read(reinterpret_cast<char*>(item.data.data()), fileSize);
-                file.close();
-            }
+                default_packer(dirPathSafe, item, extraInfo);
+
             pak.addItem(std::move(item));
             ++lineNumber;
         }
@@ -114,9 +70,44 @@ namespace scpak
         return pak;
     }
 
-    void pack_string(const std::string &inputPath, PakItem &item)
+    PakFile pack(const std::string &dirPath, bool packText, bool packTexture, bool packFont, bool packSound)
     {
-        std::string fileName = inputPath + item.name;
+        std::map<std::string, packer_type> packers;
+        if (packText)
+        {
+            packers.insert(std::pair<std::string, packer_type>("System.String", packer_wrapper<pack_string>));
+            packers.insert(std::pair<std::string, packer_type>("System.Xml.Linq.XElement", packer_wrapper<pack_string>));
+        }
+        if (packTexture)
+            packers.insert(std::pair<std::string, packer_type>("Engine.Graphics.Texture2D", pack_texture));
+        if (packFont)
+            packers.insert(std::pair<std::string, packer_type>("Engine.Media.BitmapFont", packer_wrapper<pack_bitmapFont>));
+        if (packSound)
+            packers.insert(std::pair<std::string, packer_type>("Engine.Audio.SoundBuffer", packer_wrapper<pack_soundBuffer>));
+
+        packer_type default_packer = packer_wrapper<pack_raw>;
+        return pack(dirPath, packers, default_packer);
+    }
+
+    PakFile packAll(const std::string & dirPath)
+    {
+        return pack(dirPath, true, true, true, true);
+    }
+    
+
+    void pack_raw(const std::string & inputDir, PakItem & item)
+    {
+        std::string filePath = inputDir + item.name;
+        int fileSize = getFileSize(filePath.c_str());
+        std::ifstream file(filePath, std::ios::binary);
+        item.data.resize(fileSize);
+        item.length = fileSize;
+        file.read(reinterpret_cast<char*>(item.data.data()), fileSize);
+    }
+
+    void pack_string(const std::string &inputDir, PakItem &item)
+    {
+        std::string fileName = inputDir + item.name;
         if (item.type == "System.String")
             fileName += ".txt";
         else if (item.type == "System.Xml.Linq.XElement")
@@ -194,6 +185,42 @@ namespace scpak
         stbi_image_free(data);
     }
 
+    void pack_texture(const std::string & inputDir, PakItem & item, const std::string &meta)
+    {
+        std::string filePathRaw = inputDir + item.name;
+        std::string fileName = filePathRaw;
+        if (pathExists((filePathRaw + ".tga").c_str()))
+            fileName += ".tga";
+        else if (pathExists((filePathRaw + ".png").c_str()))
+            fileName += ".png";
+        else if (pathExists((filePathRaw + ".bmp").c_str()))
+            fileName += ".bmp";
+        else if (pathExists(filePathRaw.c_str()))
+        {
+            pack_raw(inputDir, item);
+            return;
+        }
+        else
+            throw std::runtime_error("cannot find image file: " + item.name);
+        int width, height, comp;
+        unsigned char *data = stbi_load(fileName.c_str(), &width, &height, &comp, 0);
+        if (data == nullptr)
+            throw std::runtime_error("cannot load image file: " + item.name);
+        if (comp != 4)
+            throw std::runtime_error("image must have 4 components in every pixel: " + item.name);
+        int mipmapLevel = 0;
+        if (!meta.empty())
+            std::stringstream(meta) >> mipmapLevel;
+        item.length = sizeof(int) * 3 + calcMipmapSize(width, height, mipmapLevel) * comp;
+        item.data.resize(item.length);
+        *reinterpret_cast<int*>(item.data.data()) = width;
+        *(reinterpret_cast<int*>(item.data.data()) + 1) = height;
+        *(reinterpret_cast<int*>(item.data.data()) + 2) = mipmapLevel;
+        std::memcpy(item.data.data() + sizeof(int) * 3, data, width*height*comp);
+        stbi_image_free(data);
+        int offset = generateMipmap(width, height, mipmapLevel, item.data.data() + sizeof(int) * 3);
+    }
+
     void pack_soundBuffer(const std::string &inputDir, PakItem &item)
     {
         std::string inputFilePathBase = inputDir + item.name;
@@ -231,6 +258,7 @@ namespace scpak
             item.length = item.data.size();
         }
     }
+
 
     int calcMipmapSize(int width, int height, int level)
     {
