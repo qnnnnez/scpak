@@ -41,6 +41,8 @@ namespace scpak
     int BinaryReader::readUtf8Char()
     {
         byte first = readByte();
+        if (first == 0xff)
+            return -1; // not a valid utf-8 character, in fact
         if ((first & 0b10000000) == 0)
             // only one byte long, 0b0???????
             return static_cast<int>(first);
