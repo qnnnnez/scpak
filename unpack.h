@@ -7,7 +7,7 @@
 
 namespace scpak
 {
-    typedef std::function<void(const std::string &outputDir, const PakItem &item, std::iostream &meta)> unpacker_type;
+    typedef std::function<std::string(const std::string &outputDir, const PakItem &item)> unpacker_type;
     void unpack(
         const PakFile &pak, const std::string &dirPath,
         const std::map<std::string, unpacker_type> &unpackers,
@@ -22,7 +22,7 @@ namespace scpak
     void unpack_raw(const std::string &outputDir, const PakItem &item);
     void unpack_string(const std::string &outputDir, const PakItem &item);
     void unpack_bitmapFont(const std::string &outputDir, const PakItem &item);
-    void unpack_texture(const std::string &outputDir, const PakItem &item, std::iostream &meta);
+    std::string unpack_texture(const std::string &outputDir, const PakItem &item);
     void unpack_soundBuffer(const std::string &outputDir, const PakItem &item);
 }
 

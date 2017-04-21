@@ -6,7 +6,6 @@
 #include <vector>
 #include <fstream>
 #include <sstream>
-#include <cstring>
 #include <iostream>
 
 #include "stb/stb_image.h"
@@ -51,10 +50,12 @@ namespace scpak
             lineBuffer << item.name << ':' << item.type;
             std::string itemType = item.type;
             auto it = unpackers.find(itemType);
+            std::string meta;
             if (it != unpackers.end())
-                it->second(dirPathSafe, item, lineBuffer);
+                meta = it->second(dirPathSafe, item);
             else
-                default_unpacker(dirPathSafe, item, lineBuffer);
+                meta = default_unpacker(dirPathSafe, item);
+            lineBuffer << ':' << meta;
             infoLines.push_back(lineBuffer.str());
         }
         // write info file - will be useful when re-packing
@@ -64,9 +65,10 @@ namespace scpak
     }
 
     template<void old_unpacker(const std::string &outputPath, const PakItem &item)>
-    void unpacker_wrapper(const std::string &outputDir, const PakItem &item, std::iostream &meta)
+    std::string unpacker_wrapper(const std::string &outputDir, const PakItem &item)
     {
         old_unpacker(outputDir, item);
+        return "";
     }
 
     void unpack(const PakFile &pak, const std::string &dirPath, bool unpackText, bool unpackBitmapFont, bool unpackTexture, bool unpackSound)
@@ -169,7 +171,7 @@ namespace scpak
         fList << fallbackCode << std::endl;
     }
 
-    void unpack_texture(const std::string &outputDir, const PakItem &item, std::iostream &meta)
+    std::string unpack_texture(const std::string &outputDir, const PakItem &item)
     {
         std::string fileName = outputDir + item.name + ".tga";
         const byte *data = item.data.data();
@@ -179,7 +181,7 @@ namespace scpak
         const void *imageData = reinterpret_cast<const void*>(data + sizeof(int) * 3);
         stbi_write_tga(fileName.c_str(), width, height, 4, imageData);
 
-        meta << ':' << mipmapLevel;
+        return std::to_string(mipmapLevel);
     }
 
     void unpack_soundBuffer(const std::string &outputDir, const PakItem &item)

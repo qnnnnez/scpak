@@ -210,7 +210,7 @@ namespace scpak
             throw std::runtime_error("image must have 4 components in every pixel: " + item.name);
         int mipmapLevel = 0;
         if (!meta.empty())
-            std::stringstream(meta) >> mipmapLevel;
+            mipmapLevel = std::stoi(meta);
         item.length = sizeof(int) * 3 + calcMipmapSize(width, height, mipmapLevel) * comp;
         item.data.resize(item.length);
         *reinterpret_cast<int*>(item.data.data()) = width;
