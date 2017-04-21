@@ -16,7 +16,9 @@
 
 namespace scpak
 {
-    void unpack(const PakFile &pak, const std::string &dirPath, bool unpackText, bool unpackTexture, bool unpackFont, bool unpackSound)
+    void unpack(const PakFile &pak, const std::string &dirPath,
+        const std::map<std::string, unpacker_type> &unpackers,
+        const unpacker_type &default_unpacker)
     {
         std::string dirPathSafe = dirPath;
         if (*dirPathSafe.rbegin() != pathsep)
@@ -48,49 +50,55 @@ namespace scpak
             std::stringstream lineBuffer;
             lineBuffer << item.name << ':' << item.type;
             std::string itemType = item.type;
-            if (unpackText && itemType == "System.String")
-            {
-                unpack_string(dirPathSafe, item);
-            }
-            else if (unpackText && itemType == "System.Xml.Linq.XElement")
-            {
-                unpack_string(dirPathSafe, item);
-            }
-            else if (unpackTexture && itemType == "Engine.Graphics.Texture2D")
-            {
-                std::string fileName = dirPathSafe + item.name + ".tga";
-                const byte *data = item.data.data();
-                const int &width = *reinterpret_cast<const int*>(data);
-                const int &height = *(reinterpret_cast<const int*>(data) + 1);
-                const int &mipmapLevel = *(reinterpret_cast<const int*>(data) + 2);
-                const void *imageData = reinterpret_cast<const void*>(data + sizeof(int) * 3);
-                stbi_write_tga(fileName.c_str(), width, height, 4, imageData);
-
-                lineBuffer << ':' << mipmapLevel;
-            }
-            else if (unpackFont && itemType == "Engine.Media.BitmapFont")
-            {
-                unpack_bitmapFont(dirPathSafe, item);
-            }
-            else if (unpackSound && itemType == "Engine.Audio.SoundBuffer")
-            {
-                unpack_soundBuffer(dirPathSafe, item);
-            }
+            auto it = unpackers.find(itemType);
+            if (it != unpackers.end())
+                it->second(dirPathSafe, item, lineBuffer);
             else
-            {
-            unpack_raw:
-                // just write out raw data
-                std::ofstream fout(dirPathSafe + item.name, std::ios::binary);
-                fout.write(reinterpret_cast<const char*>(item.data.data()), item.length);
-                fout.close();
-            }
+                default_unpacker(dirPathSafe, item, lineBuffer);
             infoLines.push_back(lineBuffer.str());
         }
-        // write info file - we need to repack it later
+        // write info file - will be useful when re-packing
         std::ofstream fout(dirPathSafe + PakInfoFileName);
         for (const std::string &line : infoLines)
             fout << line << std::endl;
-        fout.close();
+    }
+
+    template<void old_unpacker(const std::string &outputPath, const PakItem &item)>
+    void unpacker_wrapper(const std::string &outputDir, const PakItem &item, std::iostream &meta)
+    {
+        old_unpacker(outputDir, item);
+    }
+
+    void unpack(const PakFile &pak, const std::string &dirPath,
+        bool unpackText, bool unpackBitmapFont, bool unpackTexture, bool unpackSoundBuffer)
+    {
+        std::map<std::string, unpacker_type> unpackers;
+        if (unpackText)
+        {
+            unpackers.insert(std::pair<std::string, unpacker_type>("System.String", unpacker_wrapper<unpack_string>));
+            unpackers.insert(std::pair<std::string, unpacker_type>("System.Xml.Linq.XElement", unpacker_wrapper<unpack_string>));
+        }
+        if (unpackTexture)
+        {
+            unpackers.insert(std::pair<std::string, unpacker_type>("Engine.Graphics.Texture2D", unpack_texture));
+        }
+        if (unpackBitmapFont)
+        {
+            unpackers.insert(std::pair<std::string, unpacker_type>("Engine.Media.BitmapFont", unpacker_wrapper<unpack_bitmapFont>));
+        }
+        if (unpackSoundBuffer)
+        {
+            unpackers.insert(std::pair<std::string, unpacker_type>("Engine.Audio.SoundBuffer", unpacker_wrapper<unpack_soundBuffer>));
+        }
+        unpacker_type defaultUnpacker = unpacker_wrapper<unpack_raw>;
+        unpack(pak, dirPath, unpackers, defaultUnpacker);
+    }
+
+    
+    void unpack_raw(const std::string &outputPath, const PakItem &item)
+    {
+        std::ofstream fout(outputPath + item.name, std::ios::binary);
+        fout.write(reinterpret_cast<const char*>(item.data.data()), item.length);
     }
 
     void unpack_string(const std::string &outputPath, const PakItem &item)
@@ -108,7 +116,6 @@ namespace scpak
         MemoryBinaryReader reader(item.data.data());
         std::string value = reader.readString();
         fout.write(value.data(), value.length());
-        fout.close();
     }
 
     void unpack_bitmapFont(const std::string &outputDir, const PakItem &item)
@@ -161,7 +168,19 @@ namespace scpak
         fList << spacing.x << '\t' << spacing.y << std::endl;
         fList << scale << std::endl;
         fList << fallbackCode << std::endl;
-        fList.close();
+    }
+
+    void unpack_texture(const std::string &outputDir, const PakItem &item, std::iostream &meta)
+    {
+        std::string fileName = outputDir + item.name + ".tga";
+        const byte *data = item.data.data();
+        const int &width = *reinterpret_cast<const int*>(data);
+        const int &height = *(reinterpret_cast<const int*>(data) + 1);
+        const int &mipmapLevel = *(reinterpret_cast<const int*>(data) + 2);
+        const void *imageData = reinterpret_cast<const void*>(data + sizeof(int) * 3);
+        stbi_write_tga(fileName.c_str(), width, height, 4, imageData);
+
+        meta << ':' << mipmapLevel;
     }
 
     void unpack_soundBuffer(const std::string &outputDir, const PakItem &item)
@@ -189,7 +208,6 @@ namespace scpak
             std::ofstream fout(listFileName, std::ios::binary);
             fout.write(reinterpret_cast<const char*>(&header), sizeof(header));
             fout.write(reinterpret_cast<const char*>(sound), header.subchunk2Size);
-            fout.close();
         }
         else
         {
