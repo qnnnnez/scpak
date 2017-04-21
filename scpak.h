@@ -26,4 +26,6 @@ namespace scpak
         Vector2f offset;
         std::float_t width;
     };
+
+    extern const char *PakInfoFileName;
 }
