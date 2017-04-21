@@ -59,7 +59,7 @@ namespace scpak
         // write content items
         for (PakItem &item : m_contents)
         {
-            // there are a magic number before every content data in origin Content.pak
+            // there is a magic number before every content data in origin Content.pak
             // it's DEADBEEF
             stream.put(0xDE);
             stream.put(0xAD);
