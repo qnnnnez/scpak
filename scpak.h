@@ -28,4 +28,11 @@ namespace scpak
     };
 
     extern const char *PakInfoFileName;
+
+    class BaseException
+    {
+    public:
+        virtual const char * what() const = 0;
+        virtual ~BaseException() { };
+    };
 }

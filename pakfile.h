@@ -8,9 +8,20 @@
 
 namespace scpak
 {
+    class BadPakException : public BaseException
+    {
+    public:
+        BadPakException(const char *what);
+        virtual const char * what() const;
+
+    private:
+        std::string what_;
+    };
+
+
     typedef struct // PakHeader
     {
-        byte magic[4] = {byte('P'), byte('A'), byte('K'), byte('\0')};
+        byte magic[4] = { byte('P'), byte('A'), byte('K'), byte('\0') };
         std::int32_t fileLength;
         std::int32_t contentOffset;
         std::int32_t contentCount;

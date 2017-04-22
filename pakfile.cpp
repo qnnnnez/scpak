@@ -8,16 +8,26 @@
 
 namespace scpak
 {
+    BadPakException::BadPakException(const char *what) :
+        BaseException(), what_(what)
+    { }
+
+    const char * BadPakException::what() const
+    {
+        return what_.c_str();
+    }
+
+
     void PakFile::load(std::istream &stream)
     {
         // read header
         PakHeader header;
         stream.read(reinterpret_cast<char*>(&header), sizeof(header));
         if (!header.checkMagic())
-            throw std::runtime_error("bad pak file");
+            throw BadPakException("invalid pak header");
         StreamBinaryReader reader(&stream);
         // read content dictionary
-        for (int i=0; i<header.contentCount; ++i)
+        for (int i = 0; i<header.contentCount; ++i)
         {
             PakItem item;
             item.name = reader.readString();
@@ -106,7 +116,7 @@ namespace scpak
 
     void PakFile::removeItem(std::size_t where)
     {
-        m_contents.erase(m_contents.begin()+where);
+        m_contents.erase(m_contents.begin() + where);
     }
 }
 
