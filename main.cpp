@@ -26,7 +26,8 @@ void printVersion()
 
 void printLicense()
 {
-	const string LICENSE = "The MIT License (MIT) \n Copyright (c) <2017> <qunnez>";
+	const string LICENSE = "The MIT License (MIT) \nCopyright (c) <2017> <qunnez>";
+	cout << LICENSE << endl;
 }
 
 int main(int argc, char *argv[])
@@ -41,33 +42,36 @@ int main(int argc, char *argv[])
         cin >> path;
         interactive = true;
     }
-    else if (argc == 2)
+
+    if (argc == 2)
     {
-		if (argv[1] == "--help" || argv[1] == "-h")
+    	std::string cmdarg = argv[1];
+		if (cmdarg == "--help" || cmdarg == "-h")
 		{
 			printUsage (argc, argv);
 			return 0;
 		}
-		else if (argv[1] == "--version" || argv[1] == "-v")
+		else if (cmdarg == "--version" || cmdarg == "-v")
 		{
 			printVersion ();
 			return 0;
 		}
-		else if (argv[1] == "--licence" || argv[1] == "--license")
+		else if (cmdarg == "--licence" || cmdarg == "--license")
 		{
 			printLicense ();
 			return 0;
 		}
-		else if (argc == 2)
+		else
 		{
-		    path = argv[1];
-    	}
-	}
+		path = argv[1];
+		}
+    }
 	else
 	{
 		cerr << "error: unrecognized command line option" <<endl;
 		return 1;
 	}
+
     if (!pathExists(path.c_str()))
     {
         cerr << "error: file/directory " << path << " does not exists" << endl;
