@@ -15,13 +15,25 @@ void printUsage(int argc, char *argv[])
     size_t i = programPath.rfind(pathsep);
     string programName = programPath.substr(i+1);
     cout << "Usage: " << programName << " <directory> | <pakfile>" << endl;
+    cout << "NOTE: You can just drag&drop directory or pakfile on scpak executable";
+}
+
+void printVersion()
+{
+	const string VERSION = ""; //TODO
+	cout << VERSION <<endl;
+}
+
+void printLicense()
+{
+	const string LICENSE = "The MIT License (MIT) \n Copyright (c) <2017> <qunnez>";
 }
 
 int main(int argc, char *argv[])
 {
     string path;
     bool interactive = false;
-    if (argc != 2)
+    if (argc == 1)
     {
         printUsage(argc, argv);
         cout << endl;
@@ -29,11 +41,33 @@ int main(int argc, char *argv[])
         cin >> path;
         interactive = true;
     }
-    else
+    else if (argc == 2)
     {
-        path = argv[1];
-    }
-
+		if (argv[1] == "--help" || argv[1] == "-h")
+		{
+			printUsage (argc, argv);
+			return 0;
+		}
+		else if (argv[1] == "--version" || argv[1] == "-v")
+		{
+			printVersion ();
+			return 0;
+		}
+		else if (argv[1] == "--licence" || argv[1] == "--license")
+		{
+			printLicense ();
+			return 0;
+		}
+		else if (argc == 2)
+		{
+		    path = argv[1];
+    	}
+	}
+	else
+	{
+		cerr << "error: unrecognized command line option" <<endl;
+		return 1;
+	}
     if (!pathExists(path.c_str()))
     {
         cerr << "error: file/directory " << path << " does not exists" << endl;
