@@ -20,9 +20,7 @@ void printUsage(int argc, char *argv[])
 
 void printVersion()
 {
-	const string VERSION = "0.3.1";
-	cout << "scpak version";
-	cout << VERSION << endl;
+	cout << "scpak version " << scpak::version << endl;
 	cout << "scpak is a tool for pack/unpack Survivalcraft pak format" << endl;
 	cout << "visit https://github.com/qnnnnez/scpak for more information" << endl;
 }

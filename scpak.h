@@ -5,6 +5,8 @@
 
 namespace scpak
 {
+    const char *version = "0.3.1";
+
     typedef std::uint8_t byte;
 
     inline bool isPowerOfTwo(int n)
