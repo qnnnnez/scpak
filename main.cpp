@@ -15,13 +15,28 @@ void printUsage(int argc, char *argv[])
     size_t i = programPath.rfind(pathsep);
     string programName = programPath.substr(i+1);
     cout << "Usage: " << programName << " <directory> | <pakfile>" << endl;
+    cout << "NOTE: You can just drag&drop directory or pakfile on scpak executable";
+}
+
+void printVersion()
+{
+	const string VERSION = "0.3.1";
+	cout << "scpak version";
+	cout << VERSION << endl;
+	cout << "scpak is a tool for pack/unpack Survivalcraft pak format" << endl;
+	cout << "visit https://github.com/qnnnnez/scpak for more information" << endl;
+}
+
+void printLicense()
+{
+	cout << "The MIT License (MIT) \nCopyright (c) 2017 qnnnnez" << endl;
 }
 
 int main(int argc, char *argv[])
 {
     string path;
     bool interactive = false;
-    if (argc != 2)
+    if (argc == 1)
     {
         printUsage(argc, argv);
         cout << endl;
@@ -29,10 +44,36 @@ int main(int argc, char *argv[])
         cin >> path;
         interactive = true;
     }
-    else
+
+    else if (argc == 2)
     {
-        path = argv[1];
+    	std::string cmdarg = argv[1];
+		if (cmdarg == "--help" || cmdarg == "-h")
+		{
+			printUsage (argc, argv);
+			return 0;
+		}
+		else if (cmdarg == "--version" || cmdarg == "-v")
+		{
+			printVersion ();
+			return 0;
+		}
+		else if (cmdarg == "--licence" || cmdarg == "--license")
+		{
+			printLicense ();
+			return 0;
+		}
+		else
+		{
+		path = argv[1];
+		}
     }
+	else
+	{
+		cerr << "error: unrecognized command line option" <<endl;
+		return 1;
+	}
+
 
     if (!pathExists(path.c_str()))
     {
