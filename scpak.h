@@ -5,7 +5,8 @@
 
 namespace scpak
 {
-    const char *version = "0.3.1";
+    extern const char *Version;
+    extern const char *PakInfoFileName;
 
     typedef std::uint8_t byte;
 
@@ -28,8 +29,6 @@ namespace scpak
         Vector2f offset;
         std::float_t width;
     };
-
-    extern const char *PakInfoFileName;
 
     class BaseException
     {

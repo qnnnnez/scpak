@@ -52,7 +52,7 @@ namespace scpak
         virtual void writeByte(byte value) = 0;
         void writeBytes(int size, const byte value[]);
         void writeInt(int value);
-        void writeFloat(float value);
+        void writeFloat(std::float_t value);
         int write7BitEncodedInt(int value);
         int writeUtf8Char(int value);
         void writeBoolean(bool value);
