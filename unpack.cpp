@@ -147,6 +147,7 @@ namespace scpak
         float scale = reader.readSingle();
         int fallbackCode = reader.readUtf8Char();
 
+        bool keepSourceImageInTag = reader.readBoolean();
         int width = reader.readInt32();
         int height = reader.readInt32();
         int mipmapLevel = reader.readInt32();
@@ -174,14 +175,19 @@ namespace scpak
     std::string unpack_texture(const std::string &outputDir, const PakItem &item)
     {
         std::string fileName = outputDir + item.name + ".tga";
-        const byte *data = item.data.data();
-        const int &width = *reinterpret_cast<const int*>(data);
-        const int &height = *(reinterpret_cast<const int*>(data) + 1);
-        const int &mipmapLevel = *(reinterpret_cast<const int*>(data) + 2);
-        const void *imageData = reinterpret_cast<const void*>(data + sizeof(int) * 3);
+        MemoryBinaryReader reader(item.data.data());
+        bool keepSourceImageInTag = reader.readBoolean();
+        int width = reader.readInt32();
+        int height = reader.readInt32();
+        int mipmapLevel = reader.readInt32();
+        const void *imageData = reinterpret_cast<const void*>(item.data.data() + reader.position);
         stbi_write_tga(fileName.c_str(), width, height, 4, imageData);
 
-        return std::to_string(mipmapLevel);
+        std::string meta;
+        meta += keepSourceImageInTag ? '1' : '0';
+        meta += ' ';
+        meta += std::to_string(mipmapLevel);
+        return meta;
     }
 
     void unpack_soundBuffer(const std::string &outputDir, const PakItem &item)

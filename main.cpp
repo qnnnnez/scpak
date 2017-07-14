@@ -48,17 +48,17 @@ int main(int argc, char *argv[])
     	std::string cmdarg = argv[1];
 		if (cmdarg == "--help" || cmdarg == "-h")
 		{
-			printUsage (argc, argv);
+			printUsage(argc, argv);
 			return 0;
 		}
 		else if (cmdarg == "--version" || cmdarg == "-v")
 		{
-			printVersion ();
+			printVersion();
 			return 0;
 		}
 		else if (cmdarg == "--licence" || cmdarg == "--license")
 		{
-			printLicense ();
+			printLicense();
 			return 0;
 		}
 		else

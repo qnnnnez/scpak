@@ -176,6 +176,7 @@ namespace scpak
         writer.writeUtf8Char(fallbackCode);
         fList.close();
 
+        writer.writeBoolean(0);
         writer.writeInt(width);
         writer.writeInt(height);
         writer.writeInt(1);
@@ -208,15 +209,18 @@ namespace scpak
             throw std::runtime_error("cannot load image file: " + item.name);
         if (comp != 4)
             throw std::runtime_error("image must have 4 components in every pixel: " + item.name);
-        int mipmapLevel = 0;
-        if (!meta.empty())
-            mipmapLevel = std::stoi(meta);
-        item.length = sizeof(int) * 3 + calcMipmapSize(width, height, mipmapLevel) * comp;
+
+        bool keepSourceImageInTag = std::stoi(meta);
+        int mipmapLevel = std::stoi(meta.substr(meta.find(' ')));
+
+        item.length = 1 + sizeof(int) * 3 + calcMipmapSize(width, height, mipmapLevel) * comp;
         item.data.resize(item.length);
-        *reinterpret_cast<int*>(item.data.data()) = width;
-        *(reinterpret_cast<int*>(item.data.data()) + 1) = height;
-        *(reinterpret_cast<int*>(item.data.data()) + 2) = mipmapLevel;
-        std::memcpy(item.data.data() + sizeof(int) * 3, data, width*height*comp);
+        MemoryBinaryWriter writer(item.data.data());
+        writer.writeBoolean(keepSourceImageInTag);
+        writer.writeInt(width);
+        writer.writeInt(height);
+        writer.writeInt(mipmapLevel);
+        std::copy(data, data + width*height*comp, item.data.begin() + writer.position);
         stbi_image_free(data);
         int offset = generateMipmap(width, height, mipmapLevel, item.data.data() + sizeof(int) * 3);
     }

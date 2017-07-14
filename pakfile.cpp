@@ -48,8 +48,6 @@ namespace scpak
 
     void PakFile::save(std::ostream &stream)
     {
-        // we cannot detect the length of the file and where content begins,
-        // so we have to write the header twice
         // write file header for the first time
         PakHeader header;
         header.contentCount = m_contents.size();
@@ -78,8 +76,6 @@ namespace scpak
             item.offset = static_cast<int>(stream.tellp()) - header.contentOffset;
             stream.write(reinterpret_cast<char*>(item.data.data()), item.length);
         }
-
-        header.fileLength = stream.tellp();
         // write the header again
         stream.seekp(0, std::ios::beg);
         stream.write(reinterpret_cast<char*>(&header), sizeof(header));

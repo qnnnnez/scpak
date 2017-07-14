@@ -22,7 +22,6 @@ namespace scpak
     typedef struct // PakHeader
     {
         byte magic[4] = { byte('P'), byte('A'), byte('K'), byte('\0') };
-        std::int32_t fileLength;
         std::int32_t contentOffset;
         std::int32_t contentCount;
 
